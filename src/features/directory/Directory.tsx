@@ -1,181 +1,204 @@
-import React, { useState } from 'react'
-import { useLanguage } from '../../context/LanguageContext'
-import { useTheme } from '../../context/ThemeContext'
-import { myFacilityStaff, myFacilityEquipment } from '../../data/mockData'
-import {
-    IconUsers,
-    IconTool,
-    IconSearch,
-    IconCircleCheck,
-    IconAlertTriangle,
-    IconClock,
-} from '@tabler/icons-react'
-
-type StaffStatus = 'available' | 'occupied' | 'off-duty'
-type EquipmentStatus = 'available' | 'occupied' | 'damaged'
-
-function StatusPill({ status }: { status: StaffStatus | EquipmentStatus }) {
-    const config: Record<string, { label: string; cls: string }> = {
-        available: { label: 'Available', cls: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/25' },
-        occupied: { label: 'Occupied', cls: 'bg-amber-500/15 text-amber-500 border-amber-500/25' },
-        'off-duty': { label: 'Off Duty', cls: 'bg-surface-500/15 text-surface-400 border-surface-500/25' },
-        damaged: { label: 'Damaged – Needs Repair', cls: 'bg-red-500/15 text-red-500 border-red-500/25' },
-    }
-    const c = config[status]
-    return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap ${c.cls}`}>
-            {status === 'available' && <IconCircleCheck size={9} />}
-            {status === 'occupied' && <IconClock size={9} />}
-            {status === 'off-duty' && <IconClock size={9} />}
-            {status === 'damaged' && <IconAlertTriangle size={9} />}
-            {c.label}
-        </span>
-    )
-}
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../services/api';
+import { Facility, ServiceStatus } from '../../types/api';
+import { DataTable } from '../../components/ui/DataTable';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { useAuth } from '../../context/AuthContext';
+import { 
+  IconBuilding, 
+  IconPhone, 
+  IconMapPin, 
+  IconSearch, 
+  IconAdjustmentsHorizontal,
+  IconArrowRight,
+  IconX
+} from '@tabler/icons-react';
 
 export default function Directory() {
-    const { t } = useLanguage()
-    const { isDark } = useTheme()
-    const [search, setSearch] = useState('')
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-    const q = search.toLowerCase()
-    
-    // TODO (Backend Team): Replace myFacilityStaff and myFacilityEquipment with API calls to fetch real-time facility resources.
-    // E.g. GET /api/facility/staff and GET /api/facility/equipment
-    const filteredStaff = myFacilityStaff.filter(s =>
-        s.name.toLowerCase().includes(q) || s.specialty.toLowerCase().includes(q) || s.role.toLowerCase().includes(q)
-    )
-    const filteredEquip = myFacilityEquipment.filter(e =>
-        e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q)
-    )
+  const { data: facilities, isLoading } = useQuery({
+    queryKey: ['facilities'],
+    queryFn: async () => {
+      const response = await apiClient.get<Facility[]>('/facilities');
+      return response.data;
+    },
+  });
 
-    const card = `rounded-2xl border p-5 ${isDark ? 'bg-surface-800/60 border-surface-700/50' : 'bg-white border-surface-200'}`
-    const rowBg = isDark ? 'bg-surface-900/50 hover:bg-surface-700/40' : 'bg-surface-50 hover:bg-surface-100'
+  const filteredFacilities = facilities?.filter(f => 
+    f.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.location?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    const staffAvail = myFacilityStaff.filter(s => s.status === 'available').length
-    const equipAvail = myFacilityEquipment.filter(e => e.status === 'available').length
-    const equipDamage = myFacilityEquipment.filter(e => e.status === 'damaged').length
+  const getServiceSummary = (facility: Facility) => {
+    const services = facility.services || [];
+    const available = services.filter(s => s.status === 'Available').length;
+    return `${available}/${services.length} SVCS`;
+  };
 
-    return (
-        <div className="space-y-5 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h2 className="text-2xl font-bold">{t('dir.title')}</h2>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                        Ayder Referral Hospital — own facility resources
-                    </p>
-                </div>
-                {/* Summary chips */}
-                <div className="flex gap-2 flex-wrap">
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        <IconCircleCheck size={12} /> {staffAvail} staff available
-                    </span>
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        <IconCircleCheck size={12} /> {equipAvail} equipment available
-                    </span>
-                    {equipDamage > 0 && (
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
-                            <IconAlertTriangle size={12} /> {equipDamage} need repair
-                        </span>
-                    )}
-                </div>
-            </div>
+  const statusBadge = (status: ServiceStatus) => {
+    switch (status) {
+      case 'Available': return <Badge label="Available" variant="success" />;
+      case 'Limited': return <Badge label="Limited" variant="warning" />;
+      case 'Unavailable': return <Badge label="Unavailable" variant="error" />;
+      default: return <Badge label={status} />;
+    }
+  };
 
-            {/* IconSearch */}
-            <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isDark ? 'bg-surface-800/60 border-surface-700/50' : 'bg-white border-surface-200'}`}>
-                <div className="relative flex-1">
-                    <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                    <input
-                        type="text"
-                        placeholder={t('dir.searchStaff')}
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm border outline-none transition-colors ${isDark ? 'bg-surface-900 border-surface-700 text-surface-100 focus:border-primary-500' : 'bg-surface-50 border-surface-200 focus:border-primary-500'}`}
-                    />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                {/* ── Health Professionals ── */}
-                <div className={card}>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                            <IconUsers size={15} className="text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold">{t('dir.staff')}</h3>
-                            <p className={`text-[10px] ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>{filteredStaff.length} personnel</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        {filteredStaff.map(person => (
-                            <div key={person.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${rowBg}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${person.status === 'available' ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' :
-                                        person.status === 'occupied' ? 'bg-gradient-to-br from-amber-500 to-amber-600' :
-                                            'bg-gradient-to-br from-surface-500 to-surface-600'
-                                    }`}>
-                                    {person.name.split(' ').filter(w => !['Dr.', 'Sr.'].includes(w)).map(w => w[0]).join('').slice(0, 2)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold truncate">{person.name}</p>
-                                    <p className={`text-[10px] truncate ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                                        {person.role} · {person.specialty}
-                                    </p>
-                                    {person.note && (
-                                        <p className={`text-[10px] truncate italic ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>{person.note}</p>
-                                    )}
-                                </div>
-                                <StatusPill status={person.status} />
-                            </div>
-                        ))}
-                        {filteredStaff.length === 0 && (
-                            <p className={`text-center py-6 text-sm ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>No staff match your search</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* ── Equipment ── */}
-                <div className={card}>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-accent-600 flex items-center justify-center">
-                            <IconTool size={15} className="text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold">{t('dir.equipment')}</h3>
-                            <p className={`text-[10px] ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>{filteredEquip.length} items</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        {filteredEquip.map(item => (
-                            <div key={item.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${rowBg}`}>
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${item.status === 'available' ? 'bg-emerald-500/15 text-emerald-500' :
-                                        item.status === 'occupied' ? 'bg-amber-500/15 text-amber-500' :
-                                            'bg-red-500/15 text-red-500'
-                                    }`}>
-                                    <IconTool size={14} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold truncate">{item.name}</p>
-                                    <p className={`text-[10px] ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>{item.category}</p>
-                                    {item.note && (
-                                        <p className={`text-[10px] truncate italic ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>{item.note}</p>
-                                    )}
-                                </div>
-                                <StatusPill status={item.status} />
-                            </div>
-                        ))}
-                        {filteredEquip.length === 0 && (
-                            <p className={`text-center py-6 text-sm ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>No equipment match your search</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <p className={`text-center text-[11px] ${isDark ? 'text-surface-600' : 'text-surface-400'}`}>
-                {t('dir.lastUpdated')}: 2026-03-19 19:00
-            </p>
+  const columns = [
+    { 
+      header: 'Facility Name', 
+      accessor: (f: Facility) => (
+        <div className="font-black uppercase tracking-tight text-primary-900 dark:text-white">{f.name}</div>
+      )
+    },
+    { 
+      header: 'Type', 
+      accessor: (f: Facility) => (
+        <div className="text-[10px] font-bold text-primary-400 uppercase tracking-widest">{f.type?.replace('_', ' ')}</div>
+      ),
+      className: 'w-32'
+    },
+    { 
+      header: 'Location', 
+      accessor: (f: Facility) => (
+        <div className="flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400">
+          <IconMapPin size={12} />
+          {f.location}
         </div>
-    )
+      )
+    },
+    { 
+      header: 'Service Capacity', 
+      accessor: (f: Facility) => (
+        <div className="font-mono text-[10px] font-bold text-primary-500 uppercase tracking-tighter">
+          {getServiceSummary(f)}
+        </div>
+      ),
+      className: 'w-24'
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 h-full font-sans">
+      <div className="flex items-center justify-between border-b border-primary-100 dark:border-primary-800 pb-4">
+        <div>
+          <h1 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">
+            Facility Directory
+          </h1>
+          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest mt-1">
+            Network availability and capabilities
+          </p>
+        </div>
+
+        <div className="relative w-64">
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
+          <input 
+            type="text"
+            className="input-field pl-10 h-9 text-xs font-bold uppercase tracking-widest"
+            placeholder="Search network..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-1 gap-6 min-h-0">
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            <DataTable 
+              columns={columns} 
+              data={filteredFacilities || []} 
+              isLoading={isLoading} 
+              onRowClick={setSelectedFacility}
+            />
+          </div>
+        </div>
+
+        {/* Facility Details / Capability Panel */}
+        {selectedFacility && (
+          <div className="w-96 flex flex-col bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded shadow-lg overflow-hidden animate-slide-in">
+            <div className="p-4 border-b border-primary-100 dark:border-primary-800 bg-primary-50 dark:bg-surface-800 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary-900 dark:text-white font-black uppercase tracking-tight text-sm">
+                <IconBuilding size={18} />
+                Facility Capability
+              </div>
+              <button 
+                onClick={() => setSelectedFacility(null)}
+                className="text-primary-400 hover:text-black dark:hover:text-white"
+              >
+                <IconX size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-1.5">Identification</h4>
+                  <p className="text-base font-black text-primary-900 dark:text-white uppercase leading-tight">
+                    {selectedFacility.name}
+                  </p>
+                  <p className="text-xs text-primary-500 font-bold uppercase mt-1">
+                    {selectedFacility.type?.replace('_', ' ')}
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-primary-50 dark:border-primary-800">
+                  <div className="flex items-center gap-2 text-xs text-primary-700 dark:text-primary-300">
+                    <IconMapPin size={14} className="text-primary-400" />
+                    {selectedFacility.location}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-primary-700 dark:text-primary-300">
+                    <IconPhone size={14} className="text-primary-400" />
+                    {selectedFacility.contact}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-primary-50 dark:border-primary-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-bold text-primary-400 uppercase tracking-widest">Active Services</h4>
+                  <span className="text-[10px] font-black bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 rounded">
+                    {selectedFacility.services?.length || 0} TOTAL
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {selectedFacility.services?.map((svc) => (
+                    <div key={svc.id} className="flex items-center justify-between p-2 rounded border border-primary-50 dark:border-primary-800 bg-surface-50/50 dark:bg-surface-950/50 group">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black uppercase text-primary-800 dark:text-primary-200">{svc.serviceType}</span>
+                        {svc.estimatedDelayDays && svc.estimatedDelayDays > 0 ? (
+                          <span className="text-[9px] font-bold text-amber-600 uppercase tracking-tighter italic">
+                            Wait: ~{svc.estimatedDelayDays} days
+                          </span>
+                        ) : null}
+                      </div>
+                      {statusBadge(svc.status || 'Available' as ServiceStatus)}
+                    </div>
+                  ))}
+                  {(!selectedFacility.services || selectedFacility.services.length === 0) && (
+                    <div className="text-center py-4 text-xs font-bold text-primary-400 uppercase italic">
+                      No registered services
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-primary-100 dark:border-primary-800 bg-surface-50 dark:bg-surface-950">
+              <Button variant="secondary" className="w-full">
+                Generate Network Report
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

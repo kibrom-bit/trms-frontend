@@ -1,200 +1,50 @@
-import React from "react";
-import { Link } from "react-router-dom"; // used by quickActions
-import { useLanguage } from "../../context/LanguageContext";
-import { useTheme } from "../../context/ThemeContext";
-import StatCard from "../../components/StatCard";
-import StatusBadge from "../../components/StatusBadge";
-import { mockReferrals, referralTrendData } from "../../data/mockData";
-import {
-  IconFileText,
-  IconClock,
-  IconClipboardList,
-  IconCircleCheck,
-  IconBuilding,
-  IconChartBar,
-} from "@tabler/icons-react";
-import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import React, { Suspense, lazy } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend,
-);
+// Lazy load role-based dashboards
+const DoctorDashboard = lazy(() => import('./views/DoctorDashboard'));
+const LiaisonDashboard = lazy(() => import('./views/LiaisonDashboard'));
+const AdminDashboard = lazy(() => import('./views/AdminDashboard'));
+const FacilityAdminDashboard = lazy(() => import('./views/FacilityAdminDashboard'));
+const DepartmentHeadDashboard = lazy(() => import('./views/DepartmentHeadDashboard'));
 
 export default function Dashboard() {
-  const { t } = useLanguage();
-  const { isDark } = useTheme();
+  const { user } = useAuth();
+  const role = user?.role;
 
-  // TODO (Backend Team): Replace with API call to fetch recent dashboard activity and statistics
-  // E.g. GET /api/dashboard/recent-referrals
-  const recentRefs = mockReferrals.slice(0, 5);
-
-  // TODO (Backend Team): Replace referralTrendData with live metrics from the server
-  // E.g. GET /api/dashboard/trends
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: isDark ? "#2b4968" : "#2b4968", font: { size: 11 } },
-      },
-      y: {
-        grid: { color: isDark ? "rgba(43,73,104,0.3)" : "rgba(43,73,104,0.2)" },
-        ticks: { color: isDark ? "#2b4968" : "#2b4968", font: { size: 11 } },
-      },
-    },
+  const renderDashboard = () => {
+    switch (role) {
+      case 'system_admin':
+        return <AdminDashboard />;
+      case 'facility_admin':
+        return <FacilityAdminDashboard />;
+      case 'department_head':
+        return <DepartmentHeadDashboard />;
+      case 'liaison_officer':
+        return <LiaisonDashboard />;
+      case 'doctor':
+      case 'hew':
+        return <DoctorDashboard />;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center p-12 border border-primary-100 rounded bg-white dark:bg-surface-900">
+            <h2 className="text-sm font-black uppercase tracking-widest text-primary-400">Unauthorized Access</h2>
+            <p className="text-xs text-primary-500 mt-2">Your role is not recognized for this view.</p>
+          </div>
+        );
+    }
   };
 
-  const quickActions = [
-    {
-      icon: IconClipboardList,
-      label: t("nav.triage"),
-      to: "/",
-      color: "from-red-500 to-red-600",
-    },
-    {
-      icon: IconBuilding,
-      label: t("nav.directory"),
-      to: "/directory",
-      color: "from-accent-500 to-accent-600",
-    },
-    {
-      icon: IconChartBar,
-      label: t("nav.analytics"),
-      to: "/analytics",
-      color: "from-purple-500 to-purple-700",
-    },
-  ];
-
   return (
-    <div className="space-y-6 animate-fade-in">
-      <h2 className="text-2xl font-bold">{t("dash.title")}</h2>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          icon={<IconFileText size={20} />}
-          label={t("dash.totalReferrals")}
-          value={248}
-          trend="12% vs last week"
-          trendUp={true}
-          color="from-primary-500 to-primary-700"
-        />
-        <StatCard
-          icon={<IconClock size={20} />}
-          label={t("dash.pendingSync")}
-          value={3}
-          trend="2 less than yesterday"
-          trendUp={false}
-          color="from-amber-500 to-amber-600"
-        />
-        <StatCard
-          icon={<IconClipboardList size={20} />}
-          label={t("dash.activeTriage")}
-          value={7}
-          color="from-red-500 to-red-600"
-        />
-        <StatCard
-          icon={<IconCircleCheck size={20} />}
-          label={t("dash.completedToday")}
-          value={14}
-          trend="18% more than avg"
-          trendUp={true}
-          color="from-accent-500 to-accent-600"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
-        <div
-          className={`lg:col-span-2 rounded-2xl p-5 border ${isDark ? "bg-surface-800/60 border-surface-700/50" : "bg-white border-surface-200"}`}
-        >
-          <h3 className="text-sm font-semibold mb-4">
-            {t("dash.referralTrend")}
-          </h3>
-          <div className="h-56">
-            <Line data={referralTrendData} options={chartOptions} />
-          </div>
+    <div className="w-full h-full font-sans">
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <div className="w-8 h-8 border-4 border-primary-100 border-t-primary-900 rounded-full animate-spin" />
+          <span className="text-xs font-bold text-primary-400 uppercase tracking-widest">Constructing Command Center...</span>
         </div>
-
-        {/* Quick actions */}
-        <div
-          className={`rounded-2xl p-5 border ${isDark ? "bg-surface-800/60 border-surface-700/50" : "bg-white border-surface-200"}`}
-        >
-          <h3 className="text-sm font-semibold mb-4">
-            {t("dash.quickActions")}
-          </h3>
-          <div className="space-y-3">
-            {quickActions.map((qa) => (
-              <Link
-                key={qa.to}
-                to={qa.to}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isDark ? "bg-surface-850 hover:bg-surface-700/60" : "bg-surface-50 hover:bg-surface-100"}`}
-              >
-                <div
-                  className={`w-9 h-9 rounded-lg bg-gradient-to-br ${qa.color} flex items-center justify-center text-white`}
-                >
-                  <qa.icon size={16} />
-                </div>
-                <span className="text-sm font-medium">{qa.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent activity */}
-      <div
-        className={`rounded-2xl p-5 border ${isDark ? "bg-surface-800/60 border-surface-700/50" : "bg-white border-surface-200"}`}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">{t("dash.recentActivity")}</h3>
-        </div>
-        <div className="space-y-3">
-          {recentRefs.map((ref, i) => (
-            <div
-              key={ref.id}
-              className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${isDark ? "hover:bg-surface-700/40" : "hover:bg-surface-50"}`}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold ${ref.priority === "emergency" ? "bg-red-500" : ref.priority === "urgent" ? "bg-amber-500" : "bg-[#2b4968]"}`}
-              >
-                {ref.patientName
-                  .split(" ")
-                  .map((w) => w[0])
-                  .join("")}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {ref.patientName}
-                </p>
-                <p className="text-xs text-surface-500 truncate">
-                  {ref.chiefComplaint}
-                </p>
-              </div>
-              <StatusBadge type="priority" value={ref.priority} />
-              <StatusBadge type="sync" value={ref.status} />
-            </div>
-          ))}
-        </div>
-      </div>
+      }>
+        {renderDashboard()}
+      </Suspense>
     </div>
   );
 }
