@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { apiClient } from '../../../services/api';
 import { StatBanner } from '../components/StatBanner';
 import { DataTable } from '../../../components/ui/DataTable';
@@ -49,7 +50,7 @@ export default function FacilityAdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">Facility Command</h2>
-          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest">Oversight & Resource Management</p>
+          <p className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">Oversight & Resource Management</p>
         </div>
         <div className="flex gap-2">
             <div className="px-3 py-1 bg-error-50 border border-error-100 rounded text-[10px] font-bold text-error uppercase tracking-widest flex items-center gap-2">
@@ -63,7 +64,7 @@ export default function FacilityAdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <h3 className="text-xs font-black uppercase tracking-widest text-primary-500">Departmental Load Monitor</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-900">Departmental Load Monitor</h3>
           <DataTable 
             columns={columns} 
             data={stats?.deptLoad || []} 
@@ -71,19 +72,19 @@ export default function FacilityAdminDashboard() {
           />
         </div>
 
-        <div className="p-6 border border-primary-100 dark:border-primary-800 rounded bg-white dark:bg-surface-900 space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-primary-500 mb-4">Quick Governance Actions</h3>
+        <div className="p-8 border border-primary-100 dark:border-primary-800 rounded-[2rem] bg-white dark:bg-surface-900 space-y-4 shadow-sm">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-900 mb-6">Quick Governance Actions</h3>
             <div className="grid grid-cols-2 gap-4">
-                <button className="p-4 border border-primary-100 dark:border-primary-800 rounded hover:bg-primary-50 dark:hover:bg-surface-800 transition-colors text-left">
-                    <IconUsers className="text-primary-400 mb-2" size={24} />
-                    <p className="text-xs font-bold text-primary-900 dark:text-white uppercase tracking-tight">Staffing Roll</p>
-                    <p className="text-[10px] text-primary-400">Manage clinician accounts</p>
-                </button>
-                <button className="p-4 border border-primary-100 dark:border-primary-800 rounded hover:bg-primary-50 dark:hover:bg-surface-800 transition-colors text-left">
-                    <IconBuildingHospital className="text-primary-400 mb-2" size={24} />
-                    <p className="text-xs font-bold text-primary-900 dark:text-white uppercase tracking-tight">Capabilities</p>
-                    <p className="text-[10px] text-primary-400">Update service status</p>
-                </button>
+                <Link to="/admin/departments" className="p-6 border border-primary-100 dark:border-primary-800 rounded-3xl hover:bg-primary-50 dark:hover:bg-surface-800 transition-all hover:shadow-lg group text-left block">
+                    <IconBuildingHospital className="text-primary-900 mb-3 group-hover:scale-110 transition-transform" size={28} />
+                    <p className="text-xs font-black text-primary-900 dark:text-white uppercase tracking-tight">Internal Units</p>
+                    <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-1">Provision & Manage Departments</p>
+                </Link>
+                <div className="p-6 border border-primary-100 dark:border-primary-800 rounded-3xl opacity-40 bg-primary-50/10 cursor-not-allowed">
+                    <IconActivity className="text-primary-400 mb-3" size={28} />
+                    <p className="text-xs font-black text-primary-900 dark:text-white uppercase tracking-tight">Capabilities</p>
+                    <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-1">Service Status (Planned)</p>
+                </div>
             </div>
         </div>
       </div>

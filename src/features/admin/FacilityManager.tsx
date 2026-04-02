@@ -14,10 +14,16 @@ import {
   IconX,
   IconCheck,
   IconEye,
-  IconEyeOff
+  IconEyeOff,
+  IconExternalLink
 } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { validatePassword } from '../../utils/password-validation';
+import { getBackendUrl } from '../../utils/url-utils';
+import { IconBuildingHospital } from '@tabler/icons-react';
 
 export default function FacilityManager() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,8 +119,14 @@ export default function FacilityManager() {
         setLocalError('Administrative passwords do not match.');
         return;
       }
-      if (formData.adminPassword.length < 6) {
-        setLocalError('Password must be at least 6 characters.');
+      if (formData.adminPassword.length < 7) {
+        setLocalError('Password must be at least 7 characters.');
+        return;
+      }
+      
+      const strength = validatePassword(formData.adminPassword);
+      if (!strength.isValid) {
+        setLocalError(strength.errors[0]);
         return;
       }
     }
@@ -143,9 +155,18 @@ export default function FacilityManager() {
     { 
       header: 'Facility Name', 
       accessor: (f: Facility) => (
-        <div>
-          <div className="font-black text-primary-900 dark:text-white uppercase tracking-tight">{f.name ?? 'Unnamed Facility'}</div>
-          <div className="text-[10px] text-primary-400 font-bold uppercase tracking-widest leading-none mt-1">ID: {f.id.slice(0,8)}</div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-primary-50 flex items-center justify-center border border-primary-100 flex-shrink-0">
+            {f.profileImageUrl ? (
+              <img src={getBackendUrl(f.profileImageUrl)} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <IconBuildingHospital size={16} className="text-primary-300" />
+            )}
+          </div>
+          <div>
+            <div className="font-black text-primary-900 dark:text-white uppercase tracking-tight leading-none">{f.name ?? 'Unnamed Facility'}</div>
+            <div className="text-[9px] text-primary-600 font-bold uppercase tracking-widest leading-none mt-1.5 ">ID: {f.id.slice(0,8)}</div>
+          </div>
         </div>
       )
     },
@@ -172,10 +193,11 @@ export default function FacilityManager() {
       accessor: (f: Facility) => (
         <div className="flex gap-2 justify-end">
           <button 
-            onClick={() => openModal(f)}
+            onClick={() => navigate(`/admin/facilities/${f.id}`)}
             className="p-1.5 hover:bg-primary-100 dark:hover:bg-surface-800 rounded text-primary-600 transition-colors"
+            title="View Profile"
           >
-            <IconEdit size={16} />
+            <IconExternalLink size={16} />
           </button>
           <button 
             onClick={() => setDeleteConfirmId(f.id)}
@@ -193,8 +215,8 @@ export default function FacilityManager() {
     <div className="space-y-6 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">Network Governance</h2>
-          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest mt-1">Manage physical facilities and regional nodes</p>
+          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white leading-none">Network Governance</h2>
+          <p className="text-[10px] font-bold text-primary-600 uppercase tracking-widest mt-2">Manage physical facilities and regional nodes</p>
         </div>
         <Button variant="primary" className="flex items-center gap-2" onClick={() => openModal()}>
           <IconPlus size={18} />
@@ -204,7 +226,7 @@ export default function FacilityManager() {
 
       {/* Search Bar */}
       <div className="relative">
-        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" size={18} />
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-600" size={18} />
         <input 
           type="text" 
           placeholder="SEARCH BY NAME OR LOCATION..." 
@@ -239,7 +261,7 @@ export default function FacilityManager() {
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Facility Name</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1.5 opacity-80">Facility Name</label>
                 <input 
                   required
                   className="input-field text-xs h-10 font-bold uppercase"
@@ -249,7 +271,7 @@ export default function FacilityManager() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Node Type</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1.5 opacity-80">Node Type</label>
                 <select 
                   className="input-field text-xs h-10 font-bold uppercase"
                   value={formData.type}
@@ -263,7 +285,7 @@ export default function FacilityManager() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Location (Address/Zone)</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1.5 opacity-80">Location (Address/Zone)</label>
                 <input 
                   required
                   className="input-field text-xs h-10 font-bold uppercase"
@@ -273,7 +295,7 @@ export default function FacilityManager() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Contact Line (Optional)</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1.5 opacity-80">Contact Line (Optional)</label>
                 <input 
                   className="input-field text-xs h-10 font-bold lowercase tracking-normal"
                   value={formData.contact}
@@ -298,11 +320,11 @@ export default function FacilityManager() {
                   )}
                   
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Admin Username</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1.5">Admin Username (Case Sensitive)</label>
                     <input 
                       required
-                      className="input-field text-xs h-10 font-bold lowercase"
-                      placeholder="e.g. ayalew_admin"
+                      className="input-field text-xs h-10 font-bold"
+                      placeholder="e.g. Ayalew_Admin"
                       value={formData.adminUsername}
                       onChange={e => setFormData({...formData, adminUsername: e.target.value})}
                     />

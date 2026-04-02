@@ -1,14 +1,22 @@
 // Authentication Types
-export type Role = 'system_admin' | 'facility_admin' | 'department_head' | 'liaison_officer' | 'doctor' | 'hew';
+export enum UserRole {
+  SYSTEM_ADMIN = 'system_admin',
+  FACILITY_ADMIN = 'facility_admin',
+  DEPARTMENT_HEAD = 'department_head',
+  LIAISON_OFFICER = 'liaison_officer',
+  DOCTOR = 'doctor',
+  HEW = 'hew'
+}
 
 export interface User {
   id: string;
   username?: string;
   fullName?: string;
-  role?: Role;
+  role?: UserRole;
   departmentId?: string;
+  departmentName?: string;
   facilityId?: string;
-  active?: boolean;
+  active: boolean;
   lastLogin?: string;
   phone?: string;
   email?: string;
@@ -25,7 +33,16 @@ export interface LoginResponse {
 }
 
 // Facility Types
-export type FacilityType = 'health_center' | 'primary_hospital' | 'general_hospital' | 'specialized_hospital';
+export enum DepartmentType {
+  CLINICAL = 'clinical',
+  LIAISON = 'liaison',
+}
+
+export type FacilityType = 
+  | 'health_center' 
+  | 'primary_hospital' 
+  | 'general_hospital' 
+  | 'specialized_hospital';
 export type ServiceStatus = 'Available' | 'Limited' | 'Unavailable';
 
 export interface Service {
@@ -41,7 +58,28 @@ export interface Facility {
   type?: FacilityType;
   location?: string;
   contact?: string;
+  profileImageUrl?: string;
+  updatedAt?: string;
   services?: Service[];
+  departmentCount?: number;
+  userCount?: number;
+  referralCount?: number;
+}
+
+export interface FacilityDetails {
+  facility: Facility;
+  admin: {
+    id: string;
+    username: string;
+    fullName: string;
+    email: string | null;
+    phone: string | null;
+    profileImageUrl: string | null;
+    lastLogin?: string;
+  } | null;
+  departmentCount: number;
+  clinicianCount: number;
+  referralCount: number;
 }
 
 export interface CreateFacilityRequest {
@@ -57,6 +95,7 @@ export interface CreateFacilityRequest {
 export interface Department {
   id: string;
   name?: string;
+  type?: DepartmentType;
   facilityId?: string;
 }
 
@@ -88,9 +127,10 @@ export interface Referral {
   priority?: ReferralPriority;
   clinicalSummary?: string;
   primaryDiagnosis?: string;
-  treatmentGiven?: string;
-  reason?: string;
-  status?: ReferralStatus;
+  referringUserId: string;
+  receivingFacilityId: string;
+  receivingDepartmentId?: string;
+  status: ReferralStatus;
   createdAt?: string;
   acceptedAt?: string;
   waitingTime?: string;
