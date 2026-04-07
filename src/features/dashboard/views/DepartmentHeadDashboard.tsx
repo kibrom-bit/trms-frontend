@@ -101,13 +101,15 @@ export default function DepartmentHeadDashboard() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900 leading-none mb-2">Clinical Engine</h2>
-          <p className="text-sm font-black text-primary-600 uppercase tracking-[0.2em]">{user?.departmentName || 'Leadership Oversight Dashboard'}</p>
+          <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900 leading-none mb-2">
+            {user?.departmentName || 'Department'} | Clinical Engine
+          </h2>
+          <p className="text-sm font-black text-primary-600 uppercase tracking-[0.2em]">{user?.facilityName || 'Unit Oversight & Personnel Hub'}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" size="sm" className="rounded-2xl"><IconFileExport size={16} /> Export Monthly</Button>
-          <Link to="/admin/departments">
-            <Button size="sm" className="rounded-2xl bg-primary-900 text-white"><IconClipboardList size={16} /> Triage Center</Button>
+          <Link to="/triage">
+            <Button size="sm" className="rounded-2xl bg-primary-900 text-white"><IconClipboardList size={16} /> Clinical Triage</Button>
           </Link>
         </div>
       </div>
@@ -133,7 +135,7 @@ export default function DepartmentHeadDashboard() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
              <h3 className="text-xs font-black uppercase tracking-widest text-primary-900">Live Intake Monitor</h3>
-             <Link to="/admin/departments" className="text-[10px] font-black text-primary-600 hover:text-primary-900 uppercase underline tracking-widest">View Full Registry</Link>
+             <Link to="/directory" className="text-[10px] font-black text-primary-600 hover:text-primary-900 uppercase underline tracking-widest">Network Directory</Link>
           </div>
           <div className="bg-white rounded-[3rem] border-2 border-primary-50 overflow-hidden shadow-sm h-[400px]">
              {deptReferrals.length === 0 ? (

@@ -26,6 +26,7 @@ const emptyForm = {
 export default function DepartmentManager() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isFacilityAdmin = user?.role === UserRole.FACILITY_ADMIN;
 
   // View state
   const [view, setView] = useState<View>('list');
@@ -180,8 +181,12 @@ export default function DepartmentManager() {
             <IconArrowLeft size={16} /> Back to Registry
           </button>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={openEdit} className="flex items-center gap-1.5"><IconEdit size={15} /> Edit Unit</Button>
-            <Button variant="danger" size="sm" onClick={() => setModal('delete')} className="flex items-center gap-1.5"><IconTrash size={15} /> Decommission</Button>
+            {isFacilityAdmin && (
+              <>
+                <Button variant="secondary" size="sm" onClick={openEdit} className="flex items-center gap-1.5"><IconEdit size={15} /> Edit Unit</Button>
+                <Button variant="danger" size="sm" onClick={() => setModal('delete')} className="flex items-center gap-1.5"><IconTrash size={15} /> Decommission</Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -196,6 +201,12 @@ export default function DepartmentManager() {
               <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900">{selected.name}</h2>
               <div className="flex items-center gap-4 mt-2">
                 <Badge label={selected.type === DepartmentType.LIAISON ? 'Liaison & Referral Office' : 'Clinical Medical Unit'} variant={selected.type === DepartmentType.LIAISON ? 'warning' : 'info'} />
+                {selected.facilityName && (
+                  <span className="flex items-center gap-1 text-[10px] font-black text-primary-600 uppercase tracking-widest bg-primary-100 px-3 py-1 rounded-full">
+                    <IconBuilding size={10} />
+                    {selected.facilityName}
+                  </span>
+                )}
                 <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest">{unitStaff.length} Total Personnel</span>
               </div>
             </div>
@@ -207,7 +218,7 @@ export default function DepartmentManager() {
           <div className="p-6 rounded-[2rem] border border-primary-100 bg-white space-y-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between border-b border-primary-50 pb-3">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-primary-600">Unit Administrator</h3>
-              {head && <button onClick={openEditHead} className="text-[10px] font-black text-primary-500 hover:text-primary-900 flex items-center gap-1 uppercase tracking-widest">Manage <IconChevronRight size={10} /></button>}
+              {head && isFacilityAdmin && <button onClick={openEditHead} className="text-[10px] font-black text-primary-500 hover:text-primary-900 flex items-center gap-1 uppercase tracking-widest">Manage <IconChevronRight size={10} /></button>}
             </div>
             {head ? (
               <div className="flex items-center gap-4">
@@ -338,9 +349,11 @@ export default function DepartmentManager() {
           <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900 leading-none mb-2">Unit Registry</h2>
           <p className="text-sm font-bold text-primary-600 uppercase tracking-widest">{departments.length} Operational Departments across facility</p>
         </div>
-        <Button onClick={openCreate} className="rounded-2xl px-10 py-5 bg-primary-900 text-white hover:bg-black transition-all shadow-xl shadow-primary-900/20">
-          <IconPlus size={20} className="mr-2" /> Register New unit
-        </Button>
+        {isFacilityAdmin && (
+          <Button onClick={openCreate} className="rounded-2xl px-10 py-5 bg-primary-900 text-white hover:bg-black transition-all shadow-xl shadow-primary-900/20">
+            <IconPlus size={20} className="mr-2" /> Register New unit
+          </Button>
+        )}
       </div>
 
       <div className="relative group">
@@ -371,7 +384,15 @@ export default function DepartmentManager() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-black text-primary-900 uppercase truncate text-lg tracking-tight leading-none mb-1">{d.name}</h3>
-                    <Badge label={isLiaison ? 'Liaison Unit' : 'Clinical Unit'} variant={isLiaison ? 'warning' : 'info'} />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge label={isLiaison ? 'Liaison Unit' : 'Clinical Unit'} variant={isLiaison ? 'warning' : 'info'} />
+                      {d.facilityName && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-primary-500 uppercase tracking-widest">
+                          <IconBuilding size={9} />
+                          {d.facilityName}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="pt-6 border-t border-primary-50 relative">

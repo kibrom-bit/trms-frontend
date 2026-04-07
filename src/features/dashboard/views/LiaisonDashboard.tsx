@@ -58,8 +58,10 @@ export default function LiaisonDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">Liaison Command</h2>
-          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest">Managing facility entry & exit flows</p>
+          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">
+            {user?.facilityName || 'Facility'} | Liaison Console
+          </h2>
+          <p className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">Managing Regional Entry/Exit Node Flows</p>
         </div>
         <Link to="/triage">
           <Button variant="primary" className="flex items-center gap-2">

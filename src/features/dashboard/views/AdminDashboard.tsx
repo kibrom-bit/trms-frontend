@@ -43,10 +43,10 @@ export default function AdminDashboard() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <Badge label="System Authority" variant="info" className="bg-white/10 text-white border-none text-[8px] uppercase font-black tracking-widest pl-0" />
+              <Badge label="Central System Authority" variant="info" className="bg-white/10 text-white border-none text-[8px] uppercase font-black tracking-widest pl-0" />
               <div className="h-[1px] w-8 bg-white/20" />
             </div>
-            <h1 className="text-3xl font-black tracking-tighter uppercase leading-none text-white">Network Command</h1>
+            <h1 className="text-3xl font-black tracking-tighter uppercase leading-none text-white">Global Network Command</h1>
             <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] mt-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-secondary-400" />
               Infrastructure Synchronized

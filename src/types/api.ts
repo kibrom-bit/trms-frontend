@@ -16,6 +16,7 @@ export interface User {
   departmentId?: string;
   departmentName?: string;
   facilityId?: string;
+  facilityName?: string;
   active: boolean;
   lastLogin?: string;
   phone?: string;
@@ -97,6 +98,7 @@ export interface Department {
   name?: string;
   type?: DepartmentType;
   facilityId?: string;
+  facilityName?: string;
 }
 
 // Referral Types

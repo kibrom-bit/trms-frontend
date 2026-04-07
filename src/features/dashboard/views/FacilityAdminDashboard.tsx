@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../services/api';
 import { StatBanner } from '../components/StatBanner';
 import { DataTable } from '../../../components/ui/DataTable';
@@ -8,6 +9,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { IconBuildingHospital, IconUsers, IconActivity, IconAlertTriangle } from '@tabler/icons-react';
 
 export default function FacilityAdminDashboard() {
+  const { user } = useAuth();
   const { data: stats, isLoading } = useQuery({
     queryKey: ['facility-admin-stats'],
     queryFn: async () => {
@@ -49,8 +51,10 @@ export default function FacilityAdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">Facility Command</h2>
-          <p className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">Oversight & Resource Management</p>
+          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">
+            {user?.facilityName || 'Facility'} Command
+          </h2>
+          <p className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">Oversight & Regional Resource Coordination</p>
         </div>
         <div className="flex gap-2">
             <div className="px-3 py-1 bg-error-50 border border-error-100 rounded text-[10px] font-bold text-error uppercase tracking-widest flex items-center gap-2">

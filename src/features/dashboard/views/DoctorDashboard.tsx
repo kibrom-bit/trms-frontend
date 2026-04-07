@@ -59,8 +59,10 @@ export default function DoctorDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">Clinical Command</h2>
-          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest">Managing my patient referral lifecycle</p>
+          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white">
+            {user?.fullName || 'Practitioner'} | Clinical Workspace
+          </h2>
+          <p className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">{user?.role?.replace('_', ' ')} | {user?.facilityName || 'Unit Outreach'}</p>
         </div>
         <Link to="/referrals/new">
           <Button variant="primary" className="flex items-center gap-2 text-white">
