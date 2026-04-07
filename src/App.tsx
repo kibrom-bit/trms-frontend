@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Routes, Route, NavLink, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { useNotifications } from "./context/NotificationContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { NotificationBanners } from "./components/ui/NotificationBanners";
 import {
   IconLayoutDashboard,
   IconBuilding,
@@ -28,6 +30,7 @@ import FacilityDetailView from "./features/admin/FacilityDetailView";
 
 export default function App() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
@@ -100,7 +103,11 @@ export default function App() {
           {/* Notifications */}
           <button className="relative p-2 text-primary-400 hover:text-primary-900 dark:hover:text-white transition-colors">
             <IconBell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full ring-4 ring-white dark:ring-surface-900" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex items-center justify-center min-w-4 h-4 px-1 bg-error text-white text-[9px] font-bold rounded-full ring-2 ring-white dark:ring-surface-900 text-[10px]">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* User Section */}
@@ -136,6 +143,8 @@ export default function App() {
           </button>
         </div>
       </nav>
+
+      <NotificationBanners />
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (

@@ -60,10 +60,6 @@ body {
 }
 
 .input-field {
-  @apply w-full border border-primary-200 px-3 py-2 rounded outline-none focus:border-black transition-colors bg-white;
-}
-
-.dark .input-field {
-  @apply border-primary-800 bg-surface-900 focus:border-white;
+  @apply w-full border border-primary-200 px-3 py-2 rounded outline-none focus:border-black transition-colors bg-white text-primary-900 dark:bg-surface-900 dark:border-primary-800 dark:text-white dark:focus:border-white;
 }
 

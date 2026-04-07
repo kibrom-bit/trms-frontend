@@ -44,7 +44,25 @@ export type FacilityType =
   | 'primary_hospital' 
   | 'general_hospital' 
   | 'specialized_hospital';
-export type ServiceStatus = 'Available' | 'Limited' | 'Unavailable';
+export enum ServiceStatus {
+  AVAILABLE = 'available',
+  LIMITED = 'limited',
+  UNAVAILABLE = 'unavailable',
+}
+
+export enum NotificationType {
+  NEW_REFERRAL = 'NEW_REFERRAL',
+  REFERRAL_ACCEPTED = 'REFERRAL_ACCEPTED',
+  REFERRAL_REJECTED = 'REFERRAL_REJECTED',
+  REFERRAL_FORWARDED = 'REFERRAL_FORWARDED',
+  DISCHARGE_SUMMARY_COMPLETED = 'DISCHARGE_SUMMARY_COMPLETED',
+  SERVICE_STATUS_UPDATED = 'SERVICE_STATUS_UPDATED',
+  DEPARTMENT_CREATED = 'DEPARTMENT_CREATED',
+  USER_CREATED = 'USER_CREATED',
+  USER_UPDATED = 'USER_UPDATED',
+  FACILITY_CREATED = 'FACILITY_CREATED',
+  SYSTEM_ALERT = 'SYSTEM_ALERT',
+}
 
 export interface Service {
   id: string;
@@ -134,12 +152,27 @@ export interface Referral {
   receivingDepartmentId?: string;
   status: ReferralStatus;
   createdAt?: string;
-  acceptedAt?: string;
-  waitingTime?: string;
+  syncedAt?: string;
+  forwardedFromReferralId?: string;
   forwardingNote?: string;
   forwardedTo?: Facility;
   appointmentDate?: string;
+  waitingTime?: string;
+  rejectionReason?: string;
+  acceptedAt?: string;
+  acceptedByUserId?: string;
+  rejectedByUserId?: string;
   dischargeSummary?: DischargeSummary;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  message: string;
+  type: NotificationType;
+  targetId?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export interface CreateReferralRequest {

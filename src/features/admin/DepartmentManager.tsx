@@ -454,13 +454,13 @@ export default function DepartmentManager() {
   );
 }
 
-const inputCls = 'w-full px-5 py-4 rounded-2xl border-2 border-primary-50 bg-white text-sm font-black focus:ring-8 focus:ring-primary-500/10 outline-none transition-all placeholder:text-primary-100 shadow-sm';
+const inputCls = 'w-full px-5 py-4 rounded-2xl border-2 border-primary-50 dark:border-primary-800 bg-white dark:bg-surface-900 text-primary-900 dark:text-white text-sm font-black focus:ring-8 focus:ring-primary-500/10 outline-none transition-all placeholder:text-primary-300 dark:placeholder:text-primary-600 shadow-sm';
 
 function Modal({ title, children, onClose, maxWidth = 'max-w-3xl' }: { title: string; children: React.ReactNode; onClose: () => void; maxWidth?: string }) {
   return (
     <div className="fixed inset-0 bg-primary-950/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className={`bg-white rounded-[3rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] w-full ${maxWidth} border border-white/20 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300`}>
-        <div className="px-10 py-8 border-b border-primary-50 flex justify-between items-center bg-white">
+      <div className={`bg-white dark:bg-surface-900 rounded-[3rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] w-full ${maxWidth} border border-white/20 dark:border-primary-800 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300`}>
+        <div className="px-10 py-8 border-b border-primary-50 dark:border-primary-800 flex justify-between items-center bg-white dark:bg-surface-900">
           <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary-400">{title}</h3>
           <button onClick={onClose} className="p-3 rounded-2xl text-primary-300 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"><IconX size={24} /></button>
         </div>

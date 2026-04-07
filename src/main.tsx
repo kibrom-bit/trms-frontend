@@ -6,6 +6,7 @@ import App from './App'
 import { ThemeProvider } from './context/ThemeContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -24,7 +25,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 <ThemeProvider>
                     <LanguageProvider>
                         <AuthProvider>
-                            <App />
+                            <NotificationProvider>
+                                <App />
+                            </NotificationProvider>
                         </AuthProvider>
                     </LanguageProvider>
                 </ThemeProvider>

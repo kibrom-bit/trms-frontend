@@ -37,15 +37,15 @@ export default function Directory() {
 
   const getServiceSummary = (facility: Facility) => {
     const services = facility.services || [];
-    const available = services.filter(s => s.status === 'Available').length;
+    const available = services.filter(s => s.status === ServiceStatus.AVAILABLE).length;
     return `${available}/${services.length} SVCS`;
   };
 
   const statusBadge = (status: ServiceStatus) => {
     switch (status) {
-      case 'Available': return <Badge label="Available" variant="success" />;
-      case 'Limited': return <Badge label="Limited" variant="warning" />;
-      case 'Unavailable': return <Badge label="Unavailable" variant="error" />;
+      case ServiceStatus.AVAILABLE: return <Badge label="Available" variant="success" />;
+      case ServiceStatus.LIMITED: return <Badge label="Limited" variant="warning" />;
+      case ServiceStatus.UNAVAILABLE: return <Badge label="Unavailable" variant="error" />;
       default: return <Badge label={status} />;
     }
   };
@@ -179,7 +179,7 @@ export default function Directory() {
                           </span>
                         ) : null}
                       </div>
-                      {statusBadge(svc.status || 'Available' as ServiceStatus)}
+                      {statusBadge(svc.status || ServiceStatus.AVAILABLE)}
                     </div>
                   ))}
                   {(!selectedFacility.services || selectedFacility.services.length === 0) && (
