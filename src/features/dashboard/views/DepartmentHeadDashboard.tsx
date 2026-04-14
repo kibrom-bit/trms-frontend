@@ -34,19 +34,27 @@ export default function DepartmentHeadDashboard() {
   const { data: deptReferrals = [], isLoading: referralsLoading } = useQuery({
     queryKey: ['dept-referrals', user?.departmentId],
     queryFn: async () => {
-      const r = await apiClient.get<Referral[]>(`/referrals?departmentId=${user?.departmentId}`);
+      // Backend uses the JWT strategy to read departmentId from the live DB.
+      // The query param is a hint; the backend role-based guard is the authoritative filter.
+      const url = user?.departmentId 
+        ? `/referrals?departmentId=${user.departmentId}`
+        : `/referrals`;
+      const r = await apiClient.get<Referral[]>(url);
       return r.data;
     },
-    enabled: !!user?.departmentId,
+    enabled: !!user?.id, // Always run if logged in — backend handles department scoping
   });
 
   const { data: deptClinicians = [], isLoading: cliniciansLoading } = useQuery({
     queryKey: ['dept-clinicians', user?.departmentId],
     queryFn: async () => {
-      const r = await apiClient.get<User[]>(`/users?departmentId=${user?.departmentId}`);
+      const url = user?.departmentId
+        ? `/users?departmentId=${user.departmentId}`
+        : `/users`;
+      const r = await apiClient.get<User[]>(url);
       return r.data;
     },
-    enabled: !!user?.departmentId,
+    enabled: !!user?.id,
   });
 
   /* ── ANALYTICS CALCULATION ── */

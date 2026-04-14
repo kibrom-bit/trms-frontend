@@ -68,7 +68,7 @@ export default function DepartmentManager() {
   const headByDeptId = useMemo(() => {
     const map: Record<string, User> = {};
     facilityUsers.forEach(u => {
-      const isAdmin = u.role === UserRole.DEPARTMENT_HEAD || u.role === UserRole.LIAISON_OFFICER;
+      const isAdmin = u.role === UserRole.DEPARTMENT_HEAD;
       if (isAdmin && u.departmentId) {
         map[u.departmentId] = u;
       }
@@ -217,7 +217,7 @@ export default function DepartmentManager() {
           {/* Admin Card Restored */}
           <div className="p-6 rounded-[2rem] border border-primary-100 bg-white space-y-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between border-b border-primary-50 pb-3">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-primary-600">Unit Administrator</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-primary-600">Head of Unit</h3>
               {head && isFacilityAdmin && <button onClick={openEditHead} className="text-[10px] font-black text-primary-500 hover:text-primary-900 flex items-center gap-1 uppercase tracking-widest">Manage <IconChevronRight size={10} /></button>}
             </div>
             {head ? (
@@ -300,7 +300,7 @@ export default function DepartmentManager() {
         )}
 
         {modal === 'edit-head' && (
-          <Modal title="Update System Credentials" onClose={closeModal} maxWidth="max-w-md">
+          <Modal title="Unit Leadership Portfolio" onClose={closeModal} maxWidth="max-w-md">
             <form className="space-y-6" onSubmit={e => { 
                 e.preventDefault(); 
                 if (headFormData.password && headFormData.password !== headFormData.confirmPassword) {
@@ -311,7 +311,7 @@ export default function DepartmentManager() {
                 const { confirmPassword, ...payload } = headFormData;
                 updateHeadMutation.mutate({ id: head!.id, ...payload }); 
               }}>
-              <Field label="Administrator Legal Name"><input required className={inputCls} value={headFormData.fullName} onChange={e => setHeadFormData({ ...headFormData, fullName: e.target.value })} /></Field>
+              <Field label="Portfolio Holder Legal Name"><input required className={inputCls} value={headFormData.fullName} onChange={e => setHeadFormData({ ...headFormData, fullName: e.target.value })} /></Field>
               <Field label="System Access Username"><input required className={inputCls} value={headFormData.username} onChange={e => setHeadFormData({ ...headFormData, username: e.target.value })} /></Field>
               <div className="pt-4 border-t border-primary-50 space-y-4">
                 <Field label="Emergency Password Reset"><input className={`${inputCls} border-amber-200 outline-amber-500`} type="password" placeholder="Key in new password or leave blank" value={headFormData.password} onChange={e => setHeadFormData({ ...headFormData, password: e.target.value })} /></Field>

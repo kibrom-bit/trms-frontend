@@ -15,6 +15,7 @@ import {
   IconLogout,
   IconUser,
 } from "@tabler/icons-react";
+import { Toaster } from "react-hot-toast";
 
 // Pages (Stubs for now, will implement in following phases)
 import Login from "./features/auth/Login";
@@ -59,7 +60,7 @@ export default function App() {
   }
 
   if (user?.role === 'liaison_officer') {
-    navItems.push({ path: "/triage", icon: IconClipboardList, label: "Referral Triage" });
+    navItems.push({ path: "/", icon: IconLayoutDashboard, label: "Liaison Console" });
     navItems.push({ path: "/directory", icon: IconBuilding, label: "Facility Network" });
   }
 
@@ -70,6 +71,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex flex-col font-sans">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          className: 'text-xs font-black uppercase tracking-widest',
+          style: {
+            borderRadius: '1rem',
+            background: '#1a1a1a',
+            color: '#fff',
+          },
+        }}
+      />
       {/* Top Navigation Bar */}
       <nav className="sticky top-0 z-50 h-20 bg-white dark:bg-surface-900 border-b border-primary-100 dark:border-primary-800 px-6 lg:px-12 flex items-center justify-between shadow-sm">
         {/* Left: Logo */}
@@ -212,7 +224,7 @@ export default function App() {
             } />
             <Route path="/triage" element={
               <ProtectedRoute>
-                <Triage />
+                {user?.role === 'liaison_officer' ? <Navigate to="/" replace /> : <Triage />}
               </ProtectedRoute>
             } />
             <Route path="/referrals/new" element={

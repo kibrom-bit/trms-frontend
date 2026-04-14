@@ -121,8 +121,18 @@ export interface Department {
 
 // Referral Types
 export type ReferralPriority = 'routine' | 'urgent' | 'emergency';
-export type ReferralStatus = 'draft' | 'pending' | 'accepted' | 'rejected' | 'forwarded' | 'completed';
+export type ReferralStatus = 'draft' | 'pending' | 'pending_routing' | 'accepted' | 'rejected' | 'forwarded' | 'completed';
 export type PatientGender = 'male' | 'female' | 'other' | 'unknown';
+
+export interface Patient {
+  id: string;
+  fullName: string;
+  mrn?: string;
+  dateOfBirth: string;
+  gender: PatientGender;
+  phoneNumber?: string;
+  address?: string;
+}
 
 export interface DischargeSummary {
   id: string;
@@ -131,6 +141,9 @@ export interface DischargeSummary {
   finalDiagnosis?: string;
   medicationsPrescribed?: string;
   followUpInstructions?: string;
+  specialInvestigations?: string;
+  ongoingCareInstructions?: string;
+  referBackTo?: string;
   dischargeDate?: string;
   completedBy?: User;
 }
@@ -141,6 +154,7 @@ export interface Referral {
   patientDob?: string;
   patientGender?: PatientGender;
   patientPhone?: string;
+  patient?: Patient;
   referringFacility?: Facility;
   referringUser?: User;
   receivingFacility?: Facility;
@@ -148,7 +162,7 @@ export interface Referral {
   clinicalSummary?: string;
   primaryDiagnosis?: string;
   referringUserId: string;
-  receivingFacilityId: string;
+  receivingFacilityId?: string;
   receivingDepartmentId?: string;
   status: ReferralStatus;
   createdAt?: string;
@@ -163,6 +177,15 @@ export interface Referral {
   acceptedByUserId?: string;
   rejectedByUserId?: string;
   dischargeSummary?: DischargeSummary;
+  mrn?: string;
+  otherDiagnoses?: string;
+  vitalSigns?: string;
+  allergies?: string;
+  pastMedicalHistory?: string;
+  currentMedications?: string;
+  treatmentGiven?: string;
+  reasonForReferral?: string;
+  serviceType?: string;
 }
 
 export interface Notification {
@@ -178,18 +201,22 @@ export interface Notification {
 export interface CreateReferralRequest {
   patientName: string;
   patientDob: string;
+  mrn?: string;
   patientGender?: PatientGender;
   patientPhone?: string;
-  receivingFacilityId: string;
+  receivingFacilityId?: string;
   priority: ReferralPriority;
   clinicalSummary: string;
   primaryDiagnosis: string;
+  otherDiagnoses?: string;
   treatmentGiven?: string;
   reason: string;
   consentGiven: boolean;
+  serviceType?: string;
   allergies?: string;
   pastMedicalHistory?: string;
   currentMedications?: string;
+  vitalSigns?: string;
 }
 
 // General Types

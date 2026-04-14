@@ -12,6 +12,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
   isLoading?: boolean;
   emptyMessage?: string;
+  pagination?: boolean;
 }
 
 export function DataTable<T extends { id: string | number }>({

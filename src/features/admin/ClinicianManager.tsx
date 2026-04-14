@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
-import { User, UserRole } from '../../types/api';
+import { User, UserRole, DepartmentType, Department } from '../../types/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
@@ -15,10 +15,13 @@ import { validatePassword } from '../../utils/password-validation';
 
 type ModalMode = 'create' | 'edit' | 'password' | 'delete' | null;
 
-const AVAILABLE_ROLES = [
+const CLINICAL_ROLES = [
   { value: UserRole.DOCTOR, label: 'Doctor / Clinician' },
-  { value: UserRole.LIAISON_OFFICER, label: 'Referral Liaison Officer' },
   { value: UserRole.HEW, label: 'Health Extension Worker' },
+];
+
+const LIAISON_ROLES = [
+  { value: UserRole.LIAISON_OFFICER, label: 'Referral Liaison Officer' },
 ];
 
 export default function ClinicianManager() {
@@ -48,6 +51,28 @@ export default function ClinicianManager() {
     },
     enabled: !!user?.departmentId,
   });
+
+  const { data: currentDept } = useQuery({
+    queryKey: ['my-department', user?.departmentId],
+    queryFn: async () => {
+      const r = await apiClient.get<Department>(`/departments/${user?.departmentId}`);
+      return r.data;
+    },
+    enabled: !!user?.departmentId,
+  });
+
+  const unitLabel = useMemo(() => {
+    return currentDept?.type === DepartmentType.LIAISON ? 'Liaison Officer' : 'Clinician';
+  }, [currentDept]);
+
+  const unitRoleLabel = useMemo(() => {
+    return currentDept?.type === DepartmentType.LIAISON ? 'Operational Role' : 'Clinical Functional Role';
+  }, [currentDept]);
+
+  const availableRoles = useMemo(() => {
+    if (currentDept?.type === DepartmentType.LIAISON) return LIAISON_ROLES;
+    return CLINICAL_ROLES;
+  }, [currentDept]);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return clinicians;
@@ -86,8 +111,27 @@ export default function ClinicianManager() {
     onError: (err: any) => setError(err?.response?.data?.message || 'Password reset failed'),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/users/${id}`),
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['clinicians'] }); 
+      closeModal(); 
+    },
+    onError: (err: any) => setError(err?.response?.data?.message || 'Forceful deletion failed. Ensure node is not protected.'),
+  });
+
   /* ── ACTIONS ── */
-  const openCreate = () => { setFormData({ fullName: '', username: '', role: UserRole.DOCTOR, password: '', confirmPassword: '' }); setError(null); setModal('create'); };
+  const openCreate = () => { 
+    setFormData({ 
+      fullName: '', 
+      username: '', 
+      role: currentDept?.type === DepartmentType.LIAISON ? UserRole.LIAISON_OFFICER : UserRole.DOCTOR, 
+      password: '', 
+      confirmPassword: '' 
+    }); 
+    setError(null); 
+    setModal('create'); 
+  };
   
   const openEdit = (u: User) => {
     setSelectedUser(u);
@@ -103,6 +147,12 @@ export default function ClinicianManager() {
     setModal('password');
   };
 
+  const openDelete = (u: User) => {
+    setSelectedUser(u);
+    setError(null);
+    setModal('delete');
+  };
+
   const closeModal = () => { setModal(null); setSelectedUser(null); setError(null); setShowPassword(false); };
 
   return (
@@ -110,10 +160,10 @@ export default function ClinicianManager() {
       <div className="flex items-end justify-between">
         <div>
           <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900 leading-none mb-2">Personnel Roster</h2>
-          <p className="text-sm font-bold text-primary-600 uppercase tracking-widest">{clinicians.length} Departmental Clinicians</p>
+          <p className="text-sm font-bold text-primary-600 uppercase tracking-widest">{clinicians.length} Departmental {unitLabel}s</p>
         </div>
         <Button onClick={openCreate} className="rounded-2xl px-10 py-5 bg-primary-900 text-white hover:bg-black transition-all shadow-xl shadow-primary-900/20">
-          <IconPlus size={20} className="mr-2" /> Add clinician
+          <IconPlus size={20} className="mr-2" /> Add {unitLabel}
         </Button>
       </div>
 
@@ -145,7 +195,7 @@ export default function ClinicianManager() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-black text-primary-900 uppercase truncate text-lg tracking-tight leading-none mb-1">{c.fullName}</h3>
-                  <Badge label={(c.role || 'clinician').replace('_', ' ')} variant={c.active ? 'info' : 'default'} />
+                  <Badge label={(c.role || unitLabel).replace('_', ' ')} variant={c.active ? 'info' : 'default'} />
                 </div>
               </div>
 
@@ -160,6 +210,7 @@ export default function ClinicianManager() {
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="secondary" size="sm" className="flex-1 rounded-xl" onClick={() => openEdit(c)}><IconEdit size={14} /> Profile</Button>
                     <Button variant="ghost" size="sm" className="rounded-xl border border-primary-100" onClick={() => openPasswordReset(c)}><IconKey size={14} /></Button>
+                    <Button variant="ghost" size="sm" className="rounded-xl border border-red-100 text-red-500 hover:bg-red-50" onClick={() => openDelete(c)}><IconTrash size={14} /></Button>
                     <button 
                       onClick={() => updateMutation.mutate({ id: c.id, active: !c.active })}
                       className={`p-2 rounded-xl transition-colors ${c.active ? 'text-emerald-500 hover:bg-emerald-50' : 'text-primary-300 hover:bg-primary-50'}`}
@@ -205,9 +256,9 @@ export default function ClinicianManager() {
               <Field label="Legal Full Name">
                 <input required className={inputCls} placeholder="e.g. Dr. Jane Smith" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} />
               </Field>
-              <Field label="Clinical Functional Role">
+              <Field label={unitRoleLabel}>
                 <select className={inputCls} value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as UserRole})}>
-                  {AVAILABLE_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  {availableRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </Field>
               <Field label="System Access ID (Username)">
@@ -232,7 +283,7 @@ export default function ClinicianManager() {
               )}
             </div>
 
-            <ModalFooter onCancel={closeModal} isLoading={createMutation.isPending || updateMutation.isPending} submitLabel={modal === 'create' ? 'Onboard Clinician' : 'Save Profile'} />
+            <ModalFooter onCancel={closeModal} isLoading={createMutation.isPending || updateMutation.isPending} submitLabel={modal === 'create' ? `Onboard ${unitLabel}` : 'Save Profile'} />
           </form>
         </Modal>
       )}
@@ -273,6 +324,44 @@ export default function ClinicianManager() {
             </div>
             <ModalFooter onCancel={closeModal} isLoading={resetPasswordMutation.isPending} submitLabel="Apply New Key" />
           </form>
+        </Modal>
+      )}
+
+      {modal === 'delete' && selectedUser && (
+        <Modal title="Permanent Account Purge" onClose={closeModal} maxWidth="max-w-md">
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+               <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center border-2 border-red-100 animate-bounce"><IconTrash size={32} /></div>
+               <h3 className="font-black text-primary-900 uppercase">Confirm Forceful Deletion</h3>
+               <p className="text-xs font-bold text-primary-600 uppercase tracking-widest leading-relaxed">
+                 You are about to permanently remove <span className="text-red-600 underline">@{selectedUser.username}</span> from the system core. This action cannot be undone.
+               </p>
+            </div>
+            {error && (
+              <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3 text-red-700">
+                <IconAlertTriangle size={20} />
+                <p className="text-[10px] font-black uppercase text-center">{error}</p>
+              </div>
+            )}
+            <div className="flex flex-col gap-3">
+               <Button 
+                 variant="danger" 
+                 className="w-full h-14 rounded-2xl shadow-lg shadow-red-500/20" 
+                 onClick={() => deleteMutation.mutate(selectedUser.id)}
+                 isLoading={deleteMutation.isPending}
+               >
+                 Purge from Database
+               </Button>
+               <Button 
+                 variant="secondary" 
+                 className="w-full h-14 rounded-2xl" 
+                 onClick={closeModal}
+                 disabled={deleteMutation.isPending}
+               >
+                 Abort Action
+               </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
