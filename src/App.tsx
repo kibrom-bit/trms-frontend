@@ -29,11 +29,14 @@ import DepartmentManager from "./features/admin/DepartmentManager";
 import ClinicianManager from "./features/admin/ClinicianManager";
 import FacilityDetailView from "./features/admin/FacilityDetailView";
 
+import { NotificationPopover } from "./components/ui/NotificationPopover";
+
 export default function App() {
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   if (!isAuthenticated) {
     return (
@@ -113,14 +116,23 @@ export default function App() {
         {/* Right: User Profile & Actions */}
         <div className="flex items-center gap-6">
           {/* Notifications */}
-          <button className="relative p-2 text-primary-400 hover:text-primary-900 dark:hover:text-white transition-colors">
-            <IconBell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 flex items-center justify-center min-w-4 h-4 px-1 bg-error text-white text-[9px] font-bold rounded-full ring-2 ring-white dark:ring-surface-900 text-[10px]">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
+          <div className="relative">
+            <button 
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`p-2 rounded-xl transition-all ${isNotificationsOpen ? 'bg-primary-900 text-white' : 'text-primary-400 hover:text-primary-900 dark:hover:text-white'}`}
+            >
+              <IconBell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[9px] font-black rounded-full ring-2 ring-white dark:ring-surface-900 shadow-lg animate-bounce">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {isNotificationsOpen && (
+              <NotificationPopover onClose={() => setIsNotificationsOpen(false)} />
             )}
-          </button>
+          </div>
 
           {/* User Section */}
           <div className="flex items-center gap-4 pl-6 border-l border-primary-100 dark:border-primary-800">

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../../services/api';
@@ -10,8 +11,9 @@ import {
   IconUsersGroup, IconStethoscope, IconClipboardList, 
   IconTrendingUp, IconAlertTriangle, IconCircleCheck, 
   IconHourglassLow, IconArrowUpRight, IconFileExport,
-  IconChartPie, IconActivity, IconClock
+  IconChartPie, IconActivity, IconClock, IconX
 } from '@tabler/icons-react';
+import { ReferralDetailView } from '../components/ReferralDetailView';
 import { 
   Chart as ChartJS, 
   ArcElement, 
@@ -29,6 +31,8 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 
 export default function DepartmentHeadDashboard() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedReferralForDetails, setSelectedReferralForDetails] = useState<Referral | null>(null);
 
   /* ── DATA FETCHING ── */
   const { data: deptReferrals = [], isLoading: referralsLoading } = useQuery({
@@ -44,6 +48,18 @@ export default function DepartmentHeadDashboard() {
     },
     enabled: !!user?.id, // Always run if logged in — backend handles department scoping
   });
+
+  // Handle deep-linking from notifications
+  useEffect(() => {
+    const referralId = searchParams.get('referralId');
+    if (referralId && deptReferrals && deptReferrals.length > 0) {
+      const referral = deptReferrals.find(r => r.id === referralId);
+      if (referral) {
+        setSelectedReferralForDetails(referral);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, deptReferrals, setSearchParams]);
 
   const { data: deptClinicians = [], isLoading: cliniciansLoading } = useQuery({
     queryKey: ['dept-clinicians', user?.departmentId],
@@ -152,27 +168,31 @@ export default function DepartmentHeadDashboard() {
                   <p className="font-black uppercase tracking-widest text-xs">No referrals currently active</p>
                </div>
              ) : (
-               <div className="divide-y divide-primary-50">
-                  {deptReferrals.slice(0, 5).map(r => (
-                    <div key={r.id} className="p-6 flex items-center justify-between hover:bg-primary-50/30 transition-colors">
-                       <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${r.priority === 'emergency' ? 'bg-red-100 text-red-600' : 'bg-primary-100 text-primary-600'}`}>
-                              {(r.patientName || 'P').charAt(0)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-primary-900 uppercase">{r.patientName}</p>
-                            <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest inline-flex items-center gap-1">
-                               <IconHourglassLow size={10} /> {new Date(r.createdAt || Date.now()).toLocaleDateString()}
-                            </p>
-                          </div>
-                       </div>
+                <div className="divide-y divide-primary-50">
+                   {deptReferrals.slice(0, 5).map(r => (
+                     <div 
+                        key={r.id} 
+                        className="p-6 flex items-center justify-between hover:bg-primary-50/30 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedReferralForDetails(r)}
+                     >
                         <div className="flex items-center gap-4">
-                           <Badge label={(r.status || 'pending').replace('_', ' ')} />
-                           <IconArrowUpRight size={18} className="text-primary-100" />
+                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${r.priority === 'emergency' ? 'bg-red-100 text-red-600' : 'bg-primary-100 text-primary-600'}`}>
+                               {(r.patientName || 'P').charAt(0)}
+                           </div>
+                           <div>
+                             <p className="text-sm font-black text-primary-900 uppercase">{r.patientName}</p>
+                             <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest inline-flex items-center gap-1">
+                                <IconHourglassLow size={10} /> {new Date(r.createdAt || Date.now()).toLocaleDateString()}
+                             </p>
+                           </div>
                         </div>
-                    </div>
-                  ))}
-               </div>
+                         <div className="flex items-center gap-4">
+                            <Badge label={(r.status || 'pending').replace('_', ' ')} />
+                            <IconArrowUpRight size={18} className="text-primary-100 group-hover:text-primary-900 transition-colors" />
+                         </div>
+                     </div>
+                   ))}
+                </div>
              )}
           </div>
           <div className="p-6 rounded-[2rem] bg-indigo-950 text-white flex items-center justify-between">
@@ -189,6 +209,27 @@ export default function DepartmentHeadDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {selectedReferralForDetails && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-lg shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-primary-100 dark:border-primary-800 bg-surface-50 dark:bg-surface-950 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase text-primary-400 tracking-[0.4em]">Clinical Review Console</span>
+              <button 
+                onClick={() => setSelectedReferralForDetails(null)} 
+                className="text-primary-400 hover:text-primary-900"
+              >
+                <IconX size={24} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {/* Optional: Check if referral details are already available or need an extra fetch */}
+              <ReferralDetailView referral={selectedReferralForDetails} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

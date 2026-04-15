@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../services/api';
@@ -12,12 +12,13 @@ import {
   IconPlus, IconArrowUpRight, IconClock, IconCircleCheck,
   IconStethoscope, IconX, IconSend, IconAlertCircle
 } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedForDischarge, setSelectedForDischarge] = useState<Referral | null>(null);
   const [selectedForDetail, setSelectedForDetail] = useState<Referral | null>(null);
@@ -40,6 +41,19 @@ export default function DoctorDashboard() {
       return response.data;
     },
   });
+
+  // Handle deep-linking from notifications
+  useEffect(() => {
+    const referralId = searchParams.get('referralId');
+    if (referralId && referrals && referrals.length > 0) {
+      const referral = referrals.find(r => r.id === referralId);
+      if (referral) {
+        setSelectedForDetail(referral);
+        // Clear param to prevent re-opening on manual refresh
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, referrals, setSearchParams]);
 
   // Filter 1: Referrals I initiated (Outreach) — referrals I created and sent out
   const myOutreach = referrals?.filter(r =>

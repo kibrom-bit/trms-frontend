@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../services/api';
@@ -30,6 +31,7 @@ type DashboardTab = 'incoming' | 'pending_outbound' | 'sent_outbound' | 'service
 export default function LiaisonDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<DashboardTab>('incoming');
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [selectedReferralForDetails, setSelectedReferralForDetails] = useState<Referral | null>(null);
@@ -53,6 +55,18 @@ export default function LiaisonDashboard() {
     },
     enabled: activeTab !== 'service_status'
   });
+
+  // Handle deep-linking from notifications
+  useEffect(() => {
+    const referralId = searchParams.get('referralId');
+    if (referralId && referrals && referrals.length > 0) {
+      const referral = referrals.find(r => r.id === referralId);
+      if (referral) {
+        setSelectedReferralForDetails(referral);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, referrals, setSearchParams]);
 
   const { data: facilities, isLoading: isFacilitiesLoading } = useQuery({
     queryKey: ['facilities-directory'],
