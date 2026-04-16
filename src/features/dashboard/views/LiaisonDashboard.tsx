@@ -26,7 +26,13 @@ import {
 } from '@tabler/icons-react';
 import { toast } from 'react-hot-toast';
 
-type DashboardTab = 'incoming' | 'pending_outbound' | 'sent_outbound' | 'service_status';
+type DashboardTab =
+  | 'incoming'
+  | 'assigned_inbound'
+  | 'completed_inbound'
+  | 'pending_outbound'
+  | 'sent_outbound'
+  | 'service_status';
 
 export default function LiaisonDashboard() {
   const { user } = useAuth();
@@ -54,6 +60,8 @@ export default function LiaisonDashboard() {
       // If we are on a specific tab, we can use the role filter we implemented in backend
       const roleMap: Record<string, string> = {
         'incoming': 'receiving',
+        'assigned_inbound': 'assigned_inbound',
+        'completed_inbound': 'completed_inbound',
         'pending_outbound': 'pending_outbound',
         'sent_outbound': 'sent_outbound'
       };
@@ -218,7 +226,7 @@ export default function LiaisonDashboard() {
               </Button>
             </>
           )}
-          {activeTab === 'incoming' && r.status === 'completed' && (
+          {activeTab === 'completed_inbound' && r.status === 'completed' && (
             <Button
               size="sm"
               variant="secondary"
@@ -266,6 +274,8 @@ export default function LiaisonDashboard() {
       <div className="flex items-center gap-1 bg-surface-50 dark:bg-surface-950 p-1 rounded-lg border border-primary-100 dark:border-primary-800 shadow-inner">
         {[
           { id: 'incoming', label: 'Incoming Referrals', icon: IconInbox, badge: referralStats?.incoming },
+          { id: 'assigned_inbound', label: 'Assigned Inbound', icon: IconClipboardList },
+          { id: 'completed_inbound', label: 'Completed Inbound', icon: IconClock },
           { id: 'pending_outbound', label: 'Outgoing Pending', icon: IconSend, badge: referralStats?.pendingOutbound },
           { id: 'sent_outbound', label: 'Outgoing Sent', icon: IconTruck, badge: referralStats?.sentOutbound },
           { id: 'service_status', label: 'Service Status', icon: IconActivity }
