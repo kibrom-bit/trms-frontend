@@ -36,6 +36,16 @@ export default function LiaisonDashboard() {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [selectedReferralForDetails, setSelectedReferralForDetails] = useState<Referral | null>(null);
   const [modalType, setModalType] = useState<'accept' | 'reject' | 'route' | null>(null);
+  
+  // Fetch overall statistics for badges
+  const { data: referralStats } = useQuery({
+    queryKey: ['referrals-stats'],
+    queryFn: async () => {
+      const response = await apiClient.get('/referrals/stats');
+      return response.data;
+    },
+    refetchInterval: 30000, // Refresh counts every 30s
+  });
 
   // Queries
   const { data: referrals, isLoading: isReferralsLoading } = useQuery({
@@ -132,9 +142,9 @@ export default function LiaisonDashboard() {
   });
 
   const stats = [
-    { label: 'Pending Inbound', value: referrals?.filter(r => activeTab === 'incoming').length || 0, trend: 'Emergency First', trendColor: 'default' as const },
-    { label: 'Pending Outbound', value: referrals?.filter(r => activeTab === 'pending_outbound').length || 0, trend: 'Routing Desk', trendColor: 'warning' as const },
-    { label: 'Active Tracking', value: referrals?.filter(r => activeTab === 'sent_outbound').length || 0, trend: 'Network Activity', trendColor: 'success' as const },
+    { label: 'Pending Inbound', value: referralStats?.incoming || 0, trend: 'Emergency First', trendColor: 'default' as const },
+    { label: 'Pending Outbound', value: referralStats?.pendingOutbound || 0, trend: 'Routing Desk', trendColor: 'warning' as const },
+    { label: 'Active Tracking', value: referralStats?.sentOutbound || 0, trend: 'Network Activity', trendColor: 'success' as const },
     { label: 'Facility Uptime', value: '100%', trend: 'Status Normal', trendColor: 'success' as const },
   ];
 
@@ -255,9 +265,9 @@ export default function LiaisonDashboard() {
       {/* Ribbon Navigation */}
       <div className="flex items-center gap-1 bg-surface-50 dark:bg-surface-950 p-1 rounded-lg border border-primary-100 dark:border-primary-800 shadow-inner">
         {[
-          { id: 'incoming', label: 'Incoming Referrals', icon: IconInbox, badge: referrals?.filter(r => activeTab === 'incoming').length },
-          { id: 'pending_outbound', label: 'Outgoing Pending', icon: IconSend, badge: referrals?.filter(r => activeTab === 'pending_outbound').length },
-          { id: 'sent_outbound', label: 'Outgoing Sent', icon: IconTruck },
+          { id: 'incoming', label: 'Incoming Referrals', icon: IconInbox, badge: referralStats?.incoming },
+          { id: 'pending_outbound', label: 'Outgoing Pending', icon: IconSend, badge: referralStats?.pendingOutbound },
+          { id: 'sent_outbound', label: 'Outgoing Sent', icon: IconTruck, badge: referralStats?.sentOutbound },
           { id: 'service_status', label: 'Service Status', icon: IconActivity }
         ].map(tab => (
           <button

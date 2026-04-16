@@ -176,6 +176,8 @@ export interface Referral {
   acceptedAt?: string;
   acceptedByUserId?: string;
   rejectedByUserId?: string;
+  clinicianAcceptedAt?: string;
+  clinicianAcceptedByUserId?: string;
   dischargeSummary?: DischargeSummary;
   mrn?: string;
   otherDiagnoses?: string;

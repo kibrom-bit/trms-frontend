@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
-import { CreateReferralRequest, Facility, ReferralPriority, PatientGender } from '../../types/api';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { 
   IconSend, 
@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 export default function CreateReferral() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -214,22 +215,25 @@ export default function CreateReferral() {
               <label className={labelCls}>Expected Clinical Service Needed</label>
               <input type="text" className={inputCls} placeholder="e.g. Neurosurgery, CT Scan, Specialist opinion" value={form.serviceType || ''} onChange={e => setForm({...form, serviceType: e.target.value})} />
             </div>
-            <div className="col-span-2 p-6 border-2 border-dashed border-primary-100 dark:border-primary-800 rounded-xl bg-primary-50/30">
-              <label className={labelCls}>Preferred Destination Facility (Optional)</label>
-              <select 
-                className={inputCls + " border-primary-200"}
-                value={form.receivingFacilityId || ''}
-                onChange={e => setForm({...form, receivingFacilityId: e.target.value})}
-              >
-                <option value="">REGIONAL ROUTING (Liaison will decide best destination)</option>
-                {facilities?.map(f => (
-                  <option key={f.id} value={f.id}>{f.name} ({f.type?.replace('_', ' ')})</option>
-                ))}
-              </select>
-              <p className="text-[9px] text-primary-400 font-bold uppercase mt-3 tracking-wider italic leading-relaxed">
-                * Final destination routing is subject to Liaison coordination and clinical availability matrix.
-              </p>
-            </div>
+            {/* Only show destination routing for non-clinicians (Liaison, Admin) */}
+            {user?.role !== 'doctor' && user?.role !== 'hew' && (
+              <div className="col-span-2 p-6 border-2 border-dashed border-primary-100 dark:border-primary-800 rounded-xl bg-primary-50/30">
+                <label className={labelCls}>Preferred Destination Facility (Optional)</label>
+                <select 
+                  className={inputCls + " border-primary-200"}
+                  value={form.receivingFacilityId || ''}
+                  onChange={e => setForm({...form, receivingFacilityId: e.target.value})}
+                >
+                  <option value="">REGIONAL ROUTING (Liaison will decide best destination)</option>
+                  {facilities?.map(f => (
+                    <option key={f.id} value={f.id}>{f.name} ({f.type?.replace('_', ' ')})</option>
+                  ))}
+                </select>
+                <p className="text-[9px] text-primary-400 font-bold uppercase mt-3 tracking-wider italic leading-relaxed">
+                  * Final destination routing is subject to Liaison coordination and clinical availability matrix.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

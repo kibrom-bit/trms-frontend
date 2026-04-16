@@ -22,6 +22,8 @@ export default function DoctorDashboard() {
 
   const [selectedForDischarge, setSelectedForDischarge] = useState<Referral | null>(null);
   const [selectedForDetail, setSelectedForDetail] = useState<Referral | null>(null);
+  const [selectedForReject, setSelectedForReject] = useState<Referral | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [dischargeForm, setDischargeForm] = useState({
     summary: '',
     finalDiagnosis: '',
@@ -93,6 +95,27 @@ export default function DoctorDashboard() {
     onError: () => toast.error('Failed to submit discharge summary. Please try again.'),
   });
 
+  const clinicianAcceptMutation = useMutation({
+    mutationFn: (referralId: string) => apiClient.patch(`/referrals/${referralId}/clinician-accept`),
+    onSuccess: () => {
+      toast.success('Referral claimed successfully. Notifications sent.');
+      queryClient.invalidateQueries({ queryKey: ['my-referrals'] });
+    },
+    onError: () => toast.error('Failed to claim referral. Please try again.'),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (data: { referralId: string; payload: { status: string; reason: string } }) =>
+      apiClient.patch(`/referrals/${data.referralId}`, data.payload),
+    onSuccess: () => {
+      toast.success('Referral rejected. Notifications sent.');
+      queryClient.invalidateQueries({ queryKey: ['my-referrals'] });
+      setSelectedForReject(null);
+      setRejectReason('');
+    },
+    onError: () => toast.error('Failed to reject referral. Please try again.'),
+  });
+
   const handleDischargeSubmit = () => {
     if (!selectedForDischarge) return;
     if (!dischargeForm.finalDiagnosis.trim() || !dischargeForm.summary.trim() || !dischargeForm.medicationsPrescribed.trim() || !dischargeForm.followUpInstructions.trim()) {
@@ -142,11 +165,22 @@ export default function DoctorDashboard() {
       header: 'Action',
       accessor: (r: Referral) => (
         <div className="flex gap-2">
+          {r.clinicianAcceptedAt ? (
+            <Button size="sm" variant="primary" className="h-7 text-[10px] px-2 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); setSelectedForDischarge(r); }}>
+              DISCHARGE
+            </Button>
+          ) : (
+            <>
+              <Button size="sm" variant="primary" className="h-7 text-[10px] px-2" onClick={(e) => { e.stopPropagation(); clinicianAcceptMutation.mutate(r.id); }} isLoading={clinicianAcceptMutation.isPending}>
+                CLAIM
+              </Button>
+              <Button size="sm" variant="secondary" className="h-7 text-[10px] px-2 text-error hover:bg-red-50 hover:border-red-200" onClick={(e) => { e.stopPropagation(); setSelectedForReject(r); }}>
+                REJECT
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="secondary" className="h-7 text-[10px] px-2" onClick={(e) => { e.stopPropagation(); setSelectedForDetail(r); }}>
             VIEW
-          </Button>
-          <Button size="sm" variant="primary" className="h-7 text-[10px] px-2 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); setSelectedForDischarge(r); }}>
-            DISCHARGE
           </Button>
         </div>
       ),
@@ -405,6 +439,50 @@ export default function DoctorDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── Reject Modal ────────────────────────────────────────────── */}
+      {selectedForReject && (
+         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+           <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-lg shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+             <div className="p-4 border-b border-primary-100 dark:border-primary-800 flex items-center justify-between">
+               <h3 className="text-lg font-black uppercase text-error">Reject Referral</h3>
+               <button onClick={() => setSelectedForReject(null)} className="text-primary-400 hover:text-primary-900">
+                 <IconX size={24} />
+               </button>
+             </div>
+             <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-primary-500 mb-2 block">
+                    Reason for Rejection <span className="text-error">*</span>
+                  </label>
+                  <textarea
+                    className="input-field text-sm w-full min-h-[100px] resize-none"
+                    placeholder="Provide a clear clinical reason..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                  />
+                </div>
+             </div>
+             <div className="p-4 border-t border-primary-100 dark:border-primary-800 flex gap-3">
+               <Button variant="secondary" className="flex-1" onClick={() => setSelectedForReject(null)}>Cancel</Button>
+               <Button 
+                variant="primary" 
+                className="flex-1 bg-error hover:bg-red-700 text-white" 
+                isLoading={rejectMutation.isPending}
+                onClick={() => {
+                  if (!rejectReason.trim()) {
+                    toast.error('Reason is required');
+                    return;
+                  }
+                  rejectMutation.mutate({ referralId: selectedForReject.id, payload: { status: 'REJECTED', reason: rejectReason } });
+                }}
+              >
+                 Confirm Rejection
+               </Button>
+             </div>
+           </div>
+         </div>
       )}
     </div>
   );
