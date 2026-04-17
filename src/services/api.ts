@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Ensure you set VITE_API_BASE_URL in your .env if the backend is on a different host.
-// If using Vite proxy, it can just be '/api/v1'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+// Ensure VITE_API_BASE_URL points to backend root or versioned API path.
+// This normalizes values like https://host to https://host/api/v1.
+const rawApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1').replace(/\/+$/, '');
+const API_BASE_URL = rawApiBaseUrl.endsWith('/api/v1') ? rawApiBaseUrl : `${rawApiBaseUrl}/api/v1`;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
