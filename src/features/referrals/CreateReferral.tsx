@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
+import { CreateReferralRequest, Facility, PatientGender, ReferralPriority } from '../../types/api';
 import { 
   IconSend, 
   IconArrowLeft, 
