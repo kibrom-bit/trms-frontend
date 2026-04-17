@@ -6,10 +6,9 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
 import {
-  IconPlus, IconTrash, IconEdit, IconSearch, IconX, IconCheck,
-  IconUser, IconChevronRight, IconKey, IconLock, IconChecklist,
-  IconUsers, IconStethoscope, IconMessageCircle, IconAlertTriangle,
-  IconClock, IconMail, IconArrowLeft, IconEye, IconEyeOff
+  IconPlus, IconTrash, IconEdit, IconSearch, IconX,
+  IconUser, IconKey, IconLock, IconStethoscope, IconMessageCircle, IconAlertTriangle,
+  IconEye, IconEyeOff, IconUsersGroup, IconUserCheck, IconShieldCheck, IconFilter
 } from '@tabler/icons-react';
 import { validatePassword } from '../../utils/password-validation';
 
@@ -82,6 +81,9 @@ export default function ClinicianManager() {
       c.username?.toLowerCase().includes(q)
     );
   }, [clinicians, searchQuery]);
+
+  const activeCount = useMemo(() => filtered.filter((c) => c.active).length, [filtered]);
+  const inactiveCount = useMemo(() => Math.max(filtered.length - activeCount, 0), [filtered, activeCount]);
 
   /* ── MUTATIONS ── */
   const createMutation = useMutation({
@@ -156,70 +158,95 @@ export default function ClinicianManager() {
   const closeModal = () => { setModal(null); setSelectedUser(null); setError(null); setShowPassword(false); };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter text-primary-900 leading-none mb-2">Personnel Roster</h2>
-          <p className="text-sm font-bold text-primary-600 uppercase tracking-widest">{clinicians.length} Departmental {unitLabel}s</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <section className="rounded-3xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 p-5 lg:p-7 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">Department Workforce</p>
+            <h2 className="mt-2 text-2xl lg:text-3xl font-black tracking-tight text-primary-900 dark:text-white">Manage Staff</h2>
+            <p className="mt-2 text-xs text-primary-600 dark:text-primary-300 uppercase tracking-wider">
+              Operate identities, roles, and access for your {unitLabel.toLowerCase()} team.
+            </p>
+          </div>
+          <Button onClick={openCreate} className="rounded-xl px-5 py-3 bg-primary-900 text-white hover:bg-primary-800 transition-all shadow-lg shadow-primary-900/20">
+            <IconPlus size={18} className="mr-2" /> Add {unitLabel}
+          </Button>
         </div>
-        <Button onClick={openCreate} className="rounded-2xl px-10 py-5 bg-primary-900 text-white hover:bg-black transition-all shadow-xl shadow-primary-900/20">
-          <IconPlus size={20} className="mr-2" /> Add {unitLabel}
-        </Button>
-      </div>
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <MiniStat icon={IconUsersGroup} label="Total Staff" value={filtered.length} />
+          <MiniStat icon={IconUserCheck} label="Active Accounts" value={activeCount} />
+          <MiniStat icon={IconShieldCheck} label="Inactive Accounts" value={inactiveCount} />
+        </div>
+      </section>
 
-      {/* Search Header */}
-      <div className="relative group">
-        <IconSearch size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-primary-400 group-focus-within:text-primary-900 transition-colors" />
-        <input 
-          placeholder="Search by name or username..." 
-          className="w-full pl-16 pr-6 py-5 rounded-[2rem] border-2 border-primary-50 outline-none focus:ring-8 focus:ring-primary-500/10 transition-all font-black uppercase tracking-tight text-sm text-primary-900 placeholder:text-primary-400"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-        />
-      </div>
+      <section className="rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 p-4">
+        <div className="relative">
+          <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
+          <input
+            placeholder="Search by staff name or username..."
+            className="w-full pl-10 pr-10 py-3 rounded-xl border border-primary-200 dark:border-primary-700 bg-surface-50 dark:bg-surface-950 outline-none focus:ring-4 focus:ring-primary-500/10 transition-all text-sm text-primary-900 dark:text-white placeholder:text-primary-400"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          <IconFilter size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-300" />
+        </div>
+      </section>
 
-      {/* Grid of Clinicians */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => <div key={i} className="h-44 rounded-[2rem] bg-primary-50 animate-pulse border-2 border-white" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-56 rounded-2xl bg-primary-50 animate-pulse border border-primary-100" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-primary-300 bg-white dark:bg-surface-900 p-8 text-center">
+          <p className="text-sm font-semibold text-primary-700 dark:text-primary-200">No matching staff accounts found.</p>
+          <p className="mt-2 text-xs text-primary-500">Try a different search term or add a new staff member.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(c => (
-            <div key={c.id} className="group relative p-8 rounded-[2.5rem] border-2 border-primary-50 bg-white transition-all duration-300 hover:shadow-2xl overflow-hidden bg-gradient-to-br from-white to-primary-50/10">
-              <div className="flex items-center gap-5 mb-6 relative">
-                <div className="w-16 h-16 rounded-2xl bg-primary-100 flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6 text-primary-600">
-                  {c.role === UserRole.DOCTOR ? <IconStethoscope size={32} /> : 
-                   c.role === UserRole.LIAISON_OFFICER ? <IconMessageCircle size={32} /> : 
-                   <IconUser size={32} />}
+            <article key={c.id} className="p-5 rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-700 dark:text-primary-300">
+                  {c.role === UserRole.DOCTOR ? <IconStethoscope size={24} /> :
+                   c.role === UserRole.LIAISON_OFFICER ? <IconMessageCircle size={24} /> :
+                   <IconUser size={24} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-primary-900 uppercase truncate text-lg tracking-tight leading-none mb-1">{c.fullName}</h3>
-                  <Badge label={(c.role || unitLabel).replace('_', ' ')} variant={c.active ? 'info' : 'default'} />
+                <div className="min-w-0">
+                  <h3 className="font-bold text-primary-900 dark:text-white truncate">{c.fullName}</h3>
+                  <p className="text-xs text-primary-500 truncate">@{c.username}</p>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t border-primary-50 relative">
-                <div className="flex items-center justify-between">
-                   <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">@{c.username}</p>
-                   <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest font-mono">
-                     Last: {c.lastLogin ? new Date(c.lastLogin).toLocaleDateString() : 'Never'}
-                   </p>
-                </div>
-                
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="secondary" size="sm" className="flex-1 rounded-xl" onClick={() => openEdit(c)}><IconEdit size={14} /> Profile</Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl border border-primary-100" onClick={() => openPasswordReset(c)}><IconKey size={14} /></Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl border border-red-100 text-red-500 hover:bg-red-50" onClick={() => openDelete(c)}><IconTrash size={14} /></Button>
-                    <button 
-                      onClick={() => updateMutation.mutate({ id: c.id, active: !c.active })}
-                      className={`p-2 rounded-xl transition-colors ${c.active ? 'text-emerald-500 hover:bg-emerald-50' : 'text-primary-300 hover:bg-primary-50'}`}
-                    >
-                      {c.active ? <IconEye size={18} /> : <IconEyeOff size={18} />}
-                    </button>
-                </div>
+              <div className="mt-4 flex items-center justify-between">
+                <Badge label={(c.role || unitLabel).replace('_', ' ')} variant={c.active ? 'info' : 'default'} />
+                <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${c.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                  {c.active ? 'ACTIVE' : 'INACTIVE'}
+                </span>
               </div>
-            </div>
+
+              <p className="mt-3 text-[11px] text-primary-500">
+                Last login: {c.lastLogin ? new Date(c.lastLogin).toLocaleDateString() : 'Never'}
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button variant="secondary" size="sm" className="rounded-lg" onClick={() => openEdit(c)}>
+                  <IconEdit size={14} /> Profile
+                </Button>
+                <Button variant="ghost" size="sm" className="rounded-lg border border-primary-100" onClick={() => openPasswordReset(c)}>
+                  <IconKey size={14} /> Reset Key
+                </Button>
+                <button
+                  onClick={() => updateMutation.mutate({ id: c.id, active: !c.active })}
+                  className={`h-9 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 ${c.active ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' : 'border-primary-200 text-primary-700 hover:bg-primary-50'}`}
+                >
+                  {c.active ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+                  {c.active ? 'Deactivate' : 'Activate'}
+                </button>
+                <Button variant="ghost" size="sm" className="rounded-lg border border-red-100 text-red-600 hover:bg-red-50" onClick={() => openDelete(c)}>
+                  <IconTrash size={14} /> Delete
+                </Button>
+              </div>
+            </article>
           ))}
         </div>
       )}
@@ -387,4 +414,18 @@ function Modal({ title, children, onClose, maxWidth = 'max-w-3xl' }: { title: st
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><label className="block text-[10px] font-black text-primary-600 uppercase tracking-widest ml-2">{label}</label>{children}</div>; }
 function ModalFooter({ onCancel, isLoading, submitLabel }: { onCancel: () => void; isLoading: boolean; submitLabel: string }) {
   return (<div className="flex justify-end gap-3 pt-8 mt-6 border-t border-primary-50"><Button variant="secondary" type="button" onClick={onCancel} className="px-8 h-14">Cancel</Button><Button variant="primary" type="submit" isLoading={isLoading} className="px-12 h-14 shadow-lg shadow-primary-500/20">{submitLabel}</Button></div>);
+}
+
+function MiniStat({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-primary-100 dark:border-primary-800 bg-surface-50 dark:bg-surface-950 p-3 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center">
+        <Icon size={18} />
+      </div>
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-primary-500">{label}</p>
+        <p className="text-lg font-black text-primary-900 dark:text-white leading-none">{value}</p>
+      </div>
+    </div>
+  );
 }

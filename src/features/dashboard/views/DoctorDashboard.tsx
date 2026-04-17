@@ -6,11 +6,10 @@ import { Referral, ReferralStatus, ReferralPriority } from '../../../types/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { StatBanner } from '../components/StatBanner';
 import { ReferralDetailView } from '../components/ReferralDetailView';
 import {
   IconPlus, IconArrowUpRight, IconClock, IconCircleCheck,
-  IconStethoscope, IconX, IconSend, IconAlertCircle
+  IconStethoscope, IconX, IconSend, IconAlertCircle, IconChecklist, IconHeartbeat, IconBuildingHospital
 } from '@tabler/icons-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -23,6 +22,7 @@ export default function DoctorDashboard() {
   const [selectedForDischarge, setSelectedForDischarge] = useState<Referral | null>(null);
   const [selectedForDetail, setSelectedForDetail] = useState<Referral | null>(null);
   const [selectedForReject, setSelectedForReject] = useState<Referral | null>(null);
+  const [activeTab, setActiveTab] = useState<'active_patients' | 'outbound_referrals' | 'completed_cases'>('active_patients');
   const [rejectReason, setRejectReason] = useState('');
   const [dischargeForm, setDischargeForm] = useState({
     summary: '',
@@ -125,13 +125,6 @@ export default function DoctorDashboard() {
     dischargeMutation.mutate({ referralId: selectedForDischarge.id, payload: dischargeForm });
   };
 
-  const stats = [
-    { label: 'My Pending Submissions', value: myOutreach.filter(r => r.status === 'pending').length, trend: 'Awaiting Liaison Routing', trendColor: 'warning' as const },
-    { label: 'Active In-Dept Patients', value: myAssignments.length, trend: 'Require Treatment', trendColor: 'success' as const },
-    { label: 'Completed Cases (Dept)', value: completedCases.length, trend: 'Feedback Sent', trendColor: 'default' as const },
-    { label: 'TAT Feedback', value: '3.1h', trend: 'Liaison Efficiency', trendColor: 'success' as const },
-  ];
-
   const columnsBase = [
     {
       header: 'Patient',
@@ -188,40 +181,83 @@ export default function DoctorDashboard() {
     }
   ];
 
+  const tabConfig = [
+    { id: 'active_patients' as const, label: 'Active Patients', icon: IconStethoscope, count: myAssignments.length },
+    { id: 'outbound_referrals' as const, label: 'Outbound Referrals', icon: IconArrowUpRight, count: myOutreach.length },
+    { id: 'completed_cases' as const, label: 'Completed Cases', icon: IconCircleCheck, count: completedCases.length },
+  ];
+
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between border-b border-primary-100 dark:border-primary-800 pb-4">
-        <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-primary-900 dark:text-white leading-none">
-            {user?.fullName || 'Practitioner'} <span className="text-primary-300 font-light mx-2">|</span> Clinical Workspace
-          </h2>
-          <p className="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mt-1">
-            {user?.role?.replace('_', ' ')} · {user?.departmentName || 'Department'} · {user?.facilityName || 'Facility'}
-          </p>
+      <div className="rounded-3xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 shadow-[0_22px_70px_-35px_rgba(0,0,0,0.45)] overflow-hidden">
+        <div className="bg-primary-900 text-white p-5 lg:p-7">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/20 bg-white/10">
+                <IconHeartbeat size={14} />
+                <span className="text-[10px] font-black uppercase tracking-[0.18em]">Clinical Department Workspace</span>
+              </div>
+              <h2 className="mt-3 text-2xl lg:text-3xl font-black tracking-tight leading-none">
+                {user?.departmentName || 'Medical Department'}
+              </h2>
+              <p className="mt-2 text-xs text-primary-200 uppercase tracking-[0.2em]">
+                {user?.fullName || 'Practitioner'} · {user?.facilityName || 'Facility'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-[11px] font-bold">
+                <IconBuildingHospital size={14} />
+                {user?.facilityName || 'Facility Node'}
+              </div>
+              <Link to="/referrals/new">
+                <Button variant="secondary" className="flex items-center gap-2 !bg-white !text-primary-900 hover:!bg-primary-100">
+                  <IconPlus size={16} />
+                  New Referral
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-        <Link to="/referrals/new">
-          <Button variant="primary" className="flex items-center gap-2 text-white">
-            <IconPlus size={16} />
-            New Referral
-          </Button>
-        </Link>
+
+        <div className="p-4 lg:p-6 bg-surface-50 dark:bg-surface-950 border-t border-primary-100/60 dark:border-primary-800/70">
+          <div className="rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 p-2">
+            <div className="flex items-stretch gap-2 overflow-x-auto no-scrollbar">
+              {tabConfig.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    min-w-[180px] flex-1 px-3 py-2 rounded-xl border transition-all text-left
+                    ${activeTab === tab.id
+                      ? 'bg-primary-900 text-white border-primary-900 shadow'
+                      : 'bg-surface-50 dark:bg-surface-950 text-primary-700 dark:text-primary-300 border-primary-100 dark:border-primary-800'}
+                  `}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <tab.icon size={15} />
+                      <span className="text-[11px] font-black uppercase tracking-wide">{tab.label}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === tab.id ? 'bg-white text-primary-900' : 'bg-primary-900 text-white'}`}>
+                      {tab.count}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <StatBanner stats={stats} />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Active In-Department Patients */}
+      {activeTab === 'active_patients' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <IconStethoscope size={16} className="text-emerald-600" />
             <h3 className="text-xs font-black uppercase tracking-widest text-primary-900 dark:text-white">
-              Active Patients — My Department
+              Active Patients - My Department
             </h3>
-            {myAssignments.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black">{myAssignments.length}</span>
-            )}
           </div>
-          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-2xl overflow-hidden shadow-sm">
             <DataTable
               columns={assignmentColumns}
               data={myAssignments}
@@ -230,8 +266,9 @@ export default function DoctorDashboard() {
             />
           </div>
         </div>
+      )}
 
-        {/* My Outbound Referrals */}
+      {activeTab === 'outbound_referrals' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <IconArrowUpRight size={16} className="text-primary-500" />
@@ -239,7 +276,7 @@ export default function DoctorDashboard() {
               My Outbound Referrals
             </h3>
           </div>
-          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-2xl overflow-hidden shadow-sm">
             <DataTable
               columns={columnsBase}
               data={myOutreach.slice(0, 6)}
@@ -249,23 +286,28 @@ export default function DoctorDashboard() {
             />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Completed Cases */}
-      {completedCases.length > 0 && (
+      {activeTab === 'completed_cases' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <IconCircleCheck size={16} className="text-blue-500" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-primary-500">
-              Completed Cases — Feedback Dispatched
-            </h3>
+          <div className="rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <IconCircleCheck size={16} className="text-blue-500" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-primary-600">
+                Completed Cases - Feedback Dispatched
+              </h3>
+            </div>
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-primary-500">
+              <IconChecklist size={14} />
+              {completedCases.length} archived records
+            </div>
           </div>
-          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded-2xl overflow-hidden shadow-sm">
             <DataTable
               columns={columnsBase}
               data={completedCases.slice(0, 5)}
-              isLoading={false}
-              emptyMessage=""
+              isLoading={isLoading}
+              emptyMessage="No completed cases yet."
               onRowClick={setSelectedForDetail}
             />
           </div>

@@ -1,12 +1,12 @@
 import React, { Suspense, lazy } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ClinicianManager from '../admin/ClinicianManager';
 
 // Lazy load role-based dashboards
 const DoctorDashboard = lazy(() => import('./views/DoctorDashboard'));
 const LiaisonDashboard = lazy(() => import('./views/LiaisonDashboard'));
 const AdminDashboard = lazy(() => import('./views/AdminDashboard'));
 const FacilityAdminDashboard = lazy(() => import('./views/FacilityAdminDashboard'));
-const DepartmentHeadDashboard = lazy(() => import('./views/DepartmentHeadDashboard'));
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export default function Dashboard() {
       case 'facility_admin':
         return <FacilityAdminDashboard />;
       case 'department_head':
-        return <DepartmentHeadDashboard />;
+        return <ClinicianManager />;
       case 'liaison_officer':
         return <LiaisonDashboard />;
       case 'doctor':

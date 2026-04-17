@@ -68,7 +68,6 @@ export default function App() {
   }
 
   if (user?.role === 'department_head') {
-    navItems.push({ path: "/", icon: IconLayoutDashboard, label: "Department Command" });
     navItems.push({ path: "/department/staff", icon: IconUser, label: "Manage Staff" });
   }
 
@@ -230,6 +229,8 @@ export default function App() {
               <ProtectedRoute>
                 {user?.role === 'facility_admin' 
                   ? <Navigate to="/admin/departments" replace /> 
+                  : user?.role === 'department_head'
+                    ? <Navigate to="/department/staff" replace />
                   : <Dashboard />
                 }
               </ProtectedRoute>
