@@ -13,28 +13,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('trms_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('trms_token');
-  });
+  // Security-first behavior: never persist auth across app restarts.
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   const login = (data: LoginResponse) => {
     setToken(data.access_token);
     setUser(data.user);
-    localStorage.setItem('trms_token', data.access_token);
-    localStorage.setItem('trms_user', JSON.stringify(data.user));
     apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('trms_token');
-    localStorage.removeItem('trms_user');
     delete apiClient.defaults.headers.common['Authorization'];
     window.location.href = '/login';
   };
@@ -42,7 +33,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (token) {
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return;
     }
+    delete apiClient.defaults.headers.common['Authorization'];
   }, [token]);
 
   return (

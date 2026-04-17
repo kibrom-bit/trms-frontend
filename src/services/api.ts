@@ -11,13 +11,9 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor to attach the JWT token
+// Request interceptor keeps existing headers untouched.
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('trms_token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {
@@ -35,8 +31,6 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       const isAuthEndpoint = error.config.url?.includes('/auth/login');
       if (!isAuthEndpoint) {
-        localStorage.removeItem('trms_token');
-        localStorage.removeItem('trms_user');
         window.location.href = '/login';
       }
     }
