@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../services/api';
-import { Referral, Department, Facility, ReferralStatus, ServiceStatus } from '../../../types/api';
+import { Referral, Department, Facility } from '../../../types/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { StatBanner } from '../components/StatBanner';
 import { ReferralDetailView } from '../components/ReferralDetailView';
 import { AcceptModal, RejectModal, FacilitySearchModal } from '../components/LiaisonModals';
-import { LiaisonSummaryCards } from '../components/LiaisonSummaryCards';
 import { ServiceStatusConsole } from '../components/ServiceStatusConsole';
 import {
   IconClipboardList,
@@ -18,11 +16,13 @@ import {
   IconSend,
   IconTruck,
   IconActivity,
-  IconSearch,
   IconClock,
   IconArrowRight,
   IconRefresh,
-  IconX
+  IconX,
+  IconBuildingHospital,
+  IconWaveSine,
+  IconRouteSquare2,
 } from '@tabler/icons-react';
 import { toast } from 'react-hot-toast';
 
@@ -42,6 +42,7 @@ export default function LiaisonDashboard() {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [selectedReferralForDetails, setSelectedReferralForDetails] = useState<Referral | null>(null);
   const [modalType, setModalType] = useState<'accept' | 'reject' | 'route' | null>(null);
+  const contentRegionRef = useRef<HTMLDivElement | null>(null);
   
   // Fetch overall statistics for badges
   const { data: referralStats } = useQuery({
@@ -85,6 +86,18 @@ export default function LiaisonDashboard() {
       }
     }
   }, [searchParams, referrals, setSearchParams]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth >= 1280) return;
+
+    // On small screens, tab controls are above the content region.
+    // Auto-scroll to the content area so users immediately see the selected tab results.
+    contentRegionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, [activeTab]);
 
   const { data: facilities, isLoading: isFacilitiesLoading } = useQuery({
     queryKey: ['facilities-directory'],
@@ -149,12 +162,55 @@ export default function LiaisonDashboard() {
     onError: () => toast.error('Failed to route referral.')
   });
 
-  const stats = [
-    { label: 'Pending Inbound', value: referralStats?.incoming || 0, trend: 'Emergency First', trendColor: 'default' as const },
-    { label: 'Pending Outbound', value: referralStats?.pendingOutbound || 0, trend: 'Routing Desk', trendColor: 'warning' as const },
-    { label: 'Active Tracking', value: referralStats?.sentOutbound || 0, trend: 'Network Activity', trendColor: 'success' as const },
-    { label: 'Facility Uptime', value: '100%', trend: 'Status Normal', trendColor: 'success' as const },
+  const tabConfig: Array<{
+    id: DashboardTab;
+    label: string;
+    subtitle: string;
+    icon: any;
+    badge?: number;
+  }> = [
+    {
+      id: 'incoming',
+      label: 'Incoming',
+      subtitle: 'Triage queue',
+      icon: IconInbox,
+      badge: referralStats?.incoming,
+    },
+    {
+      id: 'assigned_inbound',
+      label: 'Assigned',
+      subtitle: 'Department handoff',
+      icon: IconClipboardList,
+    },
+    {
+      id: 'completed_inbound',
+      label: 'Completed',
+      subtitle: 'Closed outcomes',
+      icon: IconClock,
+    },
+    {
+      id: 'pending_outbound',
+      label: 'Outbound Pending',
+      subtitle: 'Needs routing',
+      icon: IconSend,
+      badge: referralStats?.pendingOutbound,
+    },
+    {
+      id: 'sent_outbound',
+      label: 'Outbound Sent',
+      subtitle: 'Network tracking',
+      icon: IconTruck,
+      badge: referralStats?.sentOutbound,
+    },
+    {
+      id: 'service_status',
+      label: 'Service Matrix',
+      subtitle: 'Capacity status',
+      icon: IconActivity,
+    },
   ];
+
+  const activeTabMeta = tabConfig.find((tab) => tab.id === activeTab);
 
   const columns = [
     {
@@ -248,74 +304,128 @@ export default function LiaisonDashboard() {
   ];
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Dashboard Header */}
-      <div className="flex items-center justify-between border-b border-primary-100 dark:border-primary-800 pb-4">
-        <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-primary-900 dark:text-white leading-none">
-            {user?.facilityName || 'Facility'} <span className="text-primary-300 font-light mx-2">|</span> Liaison Console
-          </h2>
-          <p className="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Regional Entry/Exit Node Management
-          </p>
+    <div className="font-sans">
+      <div className="rounded-3xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.45)] overflow-hidden">
+        <div className="bg-primary-900 text-white px-6 lg:px-8 py-6 lg:py-7">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/20 bg-white/10">
+                <IconWaveSine size={14} />
+                <span className="text-[10px] font-black uppercase tracking-[0.18em]">Liaison Control Plane</span>
+              </div>
+              <h2 className="mt-3 text-2xl lg:text-3xl font-black tracking-tight leading-none">
+                {user?.facilityName || 'Facility'} Console
+              </h2>
+              <p className="mt-2 text-xs text-primary-200 uppercase tracking-[0.2em]">
+                Regional Entry and Exit Referral Coordination
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-[11px] font-bold">
+                <IconBuildingHospital size={14} />
+                {user?.facilityName || 'Facility Node'}
+              </div>
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 !bg-white !text-primary-900 hover:!bg-primary-100" onClick={() => queryClient.invalidateQueries()}>
+                <IconRefresh size={15} />
+                Force Sync
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" size="sm" className="flex items-center gap-2" onClick={() => queryClient.invalidateQueries()}>
-            <IconRefresh size={16} />
-            Force Sync
-          </Button>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] min-h-[640px]">
+          <aside className="hidden xl:block xl:border-r border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 p-3">
+            <div className="space-y-2">
+              {tabConfig.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    w-full text-left p-3 rounded-xl border transition-all
+                    ${activeTab === tab.id
+                      ? 'bg-primary-900 text-white border-primary-900 shadow-md'
+                      : 'bg-surface-50 dark:bg-surface-950 border-primary-100 dark:border-primary-800 text-primary-700 dark:text-primary-300 hover:border-primary-300 dark:hover:border-primary-600'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <tab.icon size={16} />
+                      <span className="text-[11px] font-black uppercase tracking-wider">{tab.label}</span>
+                    </div>
+                    {tab.badge ? (
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${activeTab === tab.id ? 'bg-white text-primary-900' : 'bg-primary-900 text-white'}`}>
+                        {tab.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className={`mt-1 text-[10px] uppercase tracking-wider ${activeTab === tab.id ? 'text-primary-200' : 'text-primary-400'}`}>
+                    {tab.subtitle}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <section ref={contentRegionRef} className="bg-surface-50 dark:bg-surface-950 p-4 lg:p-6 pb-28 xl:pb-6 flex flex-col gap-4">
+            <div className="rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Active View</p>
+                <h3 className="mt-1 text-lg font-black tracking-tight text-primary-900 dark:text-white">
+                  {activeTabMeta?.label}
+                </h3>
+              </div>
+              <div className="hidden md:flex items-center gap-2 text-xs text-primary-500">
+                <IconRouteSquare2 size={14} />
+                <span>{activeTabMeta?.subtitle}</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-primary-100 dark:border-primary-800 bg-white dark:bg-surface-900 overflow-hidden min-h-[500px] flex flex-col">
+              {activeTab === 'service_status' ? (
+                <ServiceStatusConsole facilityId={user?.facilityId || ''} />
+              ) : (
+                <DataTable
+                  columns={columns}
+                  data={referrals || []}
+                  isLoading={isReferralsLoading}
+                  emptyMessage={`No ${activeTab.replace('_', ' ')} referrals found.`}
+                  onRowClick={setSelectedReferralForDetails}
+                  pagination
+                />
+              )}
+            </div>
+          </section>
         </div>
       </div>
 
-      <LiaisonSummaryCards referrals={referrals || []} />
-
-      {/* Ribbon Navigation */}
-      <div className="flex items-center gap-1 bg-surface-50 dark:bg-surface-950 p-1 rounded-lg border border-primary-100 dark:border-primary-800 shadow-inner">
-        {[
-          { id: 'incoming', label: 'Incoming Referrals', icon: IconInbox, badge: referralStats?.incoming },
-          { id: 'assigned_inbound', label: 'Assigned Inbound', icon: IconClipboardList },
-          { id: 'completed_inbound', label: 'Completed Inbound', icon: IconClock },
-          { id: 'pending_outbound', label: 'Outgoing Pending', icon: IconSend, badge: referralStats?.pendingOutbound },
-          { id: 'sent_outbound', label: 'Outgoing Sent', icon: IconTruck, badge: referralStats?.sentOutbound },
-          { id: 'service_status', label: 'Service Status', icon: IconActivity }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as DashboardTab)}
-            className={`
-              flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded text-[10px] font-black uppercase tracking-widest transition-all
-              ${activeTab === tab.id
-                ? 'bg-primary-900 text-white shadow-lg scale-[1.02]'
-                : 'text-primary-400 hover:text-primary-900 dark:hover:text-white hover:bg-white dark:hover:bg-surface-900'
-              }
-            `}
-          >
-            <tab.icon size={16} />
-            {tab.label}
-            {tab.badge ? (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeTab === tab.id ? 'bg-white text-black' : 'bg-primary-900 text-white'}`}>
-                {tab.badge}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Content Area */}
-      <div className="bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 rounded shadow-lg overflow-hidden min-h-[500px] flex flex-col">
-        {activeTab === 'service_status' ? (
-          <ServiceStatusConsole facilityId={user?.facilityId || ''} />
-        ) : (
-          <DataTable
-            columns={columns}
-            data={referrals || []}
-            isLoading={isReferralsLoading}
-            emptyMessage={`No ${activeTab.replace('_', ' ')} referrals found.`}
-            onRowClick={setSelectedReferralForDetails}
-            pagination
-          />
-        )}
+      <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 border-t border-primary-200 dark:border-primary-800 bg-white/95 dark:bg-surface-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 supports-[backdrop-filter]:dark:bg-surface-900/90 px-2 py-2">
+        <div className="flex items-stretch gap-1 overflow-x-auto no-scrollbar">
+          {tabConfig.map((tab) => (
+            <button
+              key={`mobile-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                min-w-[92px] px-2 py-2 rounded-lg border text-center transition-all
+                ${activeTab === tab.id
+                  ? 'bg-primary-900 text-white border-primary-900'
+                  : 'bg-surface-50 dark:bg-surface-950 text-primary-700 dark:text-primary-300 border-primary-100 dark:border-primary-800'}
+              `}
+            >
+              <div className="flex items-center justify-center gap-1">
+                <tab.icon size={14} />
+                {tab.badge ? (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold ${activeTab === tab.id ? 'bg-white text-primary-900' : 'bg-primary-900 text-white'}`}>
+                    {tab.badge}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-[9px] font-black uppercase tracking-tight leading-tight">
+                {tab.label}
+              </p>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Modals */}
