@@ -6,7 +6,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NotificationBanners } from "./components/ui/NotificationBanners";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "./services/api";
-import { Facility } from "./types/api";
+import { FacilityDetails } from "./types/api";
 import { getBackendUrl } from "./utils/url-utils";
 import {
   IconLayoutDashboard,
@@ -42,10 +42,10 @@ export default function App() {
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  const { data: myFacility } = useQuery({
+  const { data: myFacilityDetails } = useQuery({
     queryKey: ["my-facility", user?.facilityId],
     queryFn: async () => {
-      const r = await apiClient.get<Facility>(`/facilities/${user?.facilityId}`);
+      const r = await apiClient.get<FacilityDetails>(`/facilities/${user?.facilityId}`);
       return r.data;
     },
     enabled: !!user?.facilityId,
@@ -109,22 +109,22 @@ export default function App() {
           {user?.facilityId ? (
             <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800 border border-primary-100 dark:border-primary-800">
               <div className="w-9 h-9 rounded-xl bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 overflow-hidden flex items-center justify-center">
-                {myFacility?.profileImageUrl ? (
+                {myFacilityDetails?.facility?.profileImageUrl ? (
                   <img
-                    src={getBackendUrl(myFacility.profileImageUrl)}
+                    src={getBackendUrl(myFacilityDetails.facility.profileImageUrl)}
                     alt=""
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-[10px] font-black text-primary-600">
-                    {(myFacility?.name || user?.facilityName || "F").charAt(0)}
+                    {(myFacilityDetails?.facility?.name || user?.facilityName || "F").charAt(0)}
                   </span>
                 )}
               </div>
               <div className="leading-tight min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary-400">Facility</p>
                 <p className="text-[11px] font-black text-primary-900 dark:text-white truncate max-w-[220px]">
-                  {myFacility?.name || user?.facilityName}
+                  {myFacilityDetails?.facility?.name || user?.facilityName}
                 </p>
               </div>
             </div>
