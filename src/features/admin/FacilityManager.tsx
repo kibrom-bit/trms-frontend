@@ -2,30 +2,33 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
 import { Facility, CreateFacilityRequest, FacilityType } from '../../types/api';
-import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { 
   IconPlus, 
   IconSearch, 
-  IconEdit, 
   IconTrash, 
   IconAlertCircle,
   IconX,
   IconCheck,
   IconEye,
   IconEyeOff,
-  IconExternalLink
+  IconExternalLink,
+  IconMapPin,
+  IconBuildingHospital,
+  IconLayoutGrid,
+  IconFilter,
+  IconChevronRight
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { validatePassword } from '../../utils/password-validation';
 import { getBackendUrl } from '../../utils/url-utils';
-import { IconBuildingHospital } from '@tabler/icons-react';
 
 export default function FacilityManager() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeType, setActiveType] = useState<FacilityType | 'all'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFacility, setEditingFacility] = useState<Facility | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -150,101 +153,151 @@ export default function FacilityManager() {
     f.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     f.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const normalized = (filteredFacilities || []).filter((f) => (activeType === 'all' ? true : f.type === activeType));
+  const sorted = [...normalized].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  const columns = [
-    { 
-      header: 'Facility Name', 
-      accessor: (f: Facility) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-primary-50 flex items-center justify-center border border-primary-100 flex-shrink-0">
-            {f.profileImageUrl ? (
-              <img src={getBackendUrl(f.profileImageUrl)} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <IconBuildingHospital size={16} className="text-primary-300" />
-            )}
-          </div>
-          <div>
-            <div className="font-black text-primary-900 dark:text-white uppercase tracking-tight leading-none">{f.name ?? 'Unnamed Facility'}</div>
-            <div className="text-[9px] text-primary-600 font-bold uppercase tracking-widest leading-none mt-1.5 ">ID: {f.id.slice(0,8)}</div>
-          </div>
-        </div>
-      )
-    },
-    { 
-      header: 'Type', 
-      accessor: (f: Facility) => {
-        const isHospital = (f.type ?? 'hospital').includes('hospital');
-        return (
-          <Badge 
-            label={isHospital ? 'Hospital' : 'Health Center'} 
-            variant={isHospital ? 'info' : 'warning'}
-          />
-        );
-      },
-      className: 'w-32'
-    },
-    { 
-      header: 'Location', 
-      accessor: (f: Facility) => f.location || 'N/A',
-      className: 'italic text-primary-600 dark:text-primary-400'
-    },
-    { 
-      header: 'Actions', 
-      accessor: (f: Facility) => (
-        <div className="flex gap-2 justify-end">
-          <button 
-            onClick={() => navigate(`/admin/facilities/${f.id}`)}
-            className="p-1.5 hover:bg-primary-100 dark:hover:bg-surface-800 rounded text-primary-600 transition-colors"
-            title="View Profile"
-          >
-            <IconExternalLink size={16} />
-          </button>
-          <button 
-            onClick={() => setDeleteConfirmId(f.id)}
-            className="p-1.5 hover:bg-error/10 rounded text-error transition-colors"
-          >
-            <IconTrash size={16} />
-          </button>
-        </div>
-      ),
-      className: 'w-24 text-right'
-    }
-  ];
+  const counts = {
+    all: facilities?.length || 0,
+    specialized_hospital: facilities?.filter((f) => f.type === 'specialized_hospital').length || 0,
+    general_hospital: facilities?.filter((f) => f.type === 'general_hospital').length || 0,
+    primary_hospital: facilities?.filter((f) => f.type === 'primary_hospital').length || 0,
+    health_center: facilities?.filter((f) => f.type === 'health_center').length || 0,
+  };
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary-900 dark:text-white leading-none">Network Governance</h2>
-          <p className="text-[10px] font-bold text-primary-600 uppercase tracking-widest mt-2">Manage physical facilities and regional nodes</p>
+      <div className="rounded-3xl bg-primary-900 text-white p-6 lg:p-8 shadow-xl relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
+        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15">
+              <IconLayoutGrid size={14} />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Manage System</span>
+            </div>
+            <h2 className="mt-3 text-2xl lg:text-3xl font-black tracking-tight">Facility Registry</h2>
+            <p className="mt-2 text-xs text-white/70 uppercase tracking-[0.18em]">
+              Register nodes, set identity profile, and govern network topology
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="px-4 py-3 rounded-2xl bg-white/10 border border-white/15">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">Total Facilities</p>
+              <p className="mt-1 text-2xl font-black leading-none">{counts.all}</p>
+            </div>
+            <Button variant="secondary" className="h-12 px-6 rounded-2xl !bg-white !text-primary-900 hover:!bg-primary-100" onClick={() => openModal()}>
+              <IconPlus size={18} className="mr-2" />
+              Register Facility
+            </Button>
+          </div>
         </div>
-        <Button variant="primary" className="flex items-center gap-2" onClick={() => openModal()}>
-          <IconPlus size={18} />
-          Register Facility
-        </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-600" size={18} />
-        <input 
-          type="text" 
-          placeholder="SEARCH BY NAME OR LOCATION..." 
-          className="w-full bg-white dark:bg-surface-900 border border-primary-200 dark:border-primary-800 rounded pl-10 pr-4 py-2.5 text-xs font-bold uppercase tracking-widest text-primary-900 dark:text-white focus:ring-2 focus:ring-primary-900 focus:outline-none transition-shadow"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+        <div className="relative">
+          <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search facilities by name or location..."
+            className="w-full h-12 bg-white dark:bg-surface-900 border border-primary-200 dark:border-primary-800 rounded-2xl pl-11 pr-4 text-sm text-primary-900 dark:text-white focus:ring-4 focus:ring-primary-900/10 focus:outline-none transition-shadow"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-surface-900 border border-primary-200 dark:border-primary-800 p-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button onClick={() => setActiveType('all')} className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border transition-all ${activeType === 'all' ? 'bg-primary-900 text-white border-primary-900' : 'bg-surface-50 dark:bg-surface-950 border-primary-100 dark:border-primary-800 text-primary-700 dark:text-primary-300'}`}>
+            All <span className="ml-2 text-[10px] font-bold opacity-80">{counts.all}</span>
+          </button>
+          {([
+            ['specialized_hospital', 'Specialized', counts.specialized_hospital],
+            ['general_hospital', 'General', counts.general_hospital],
+            ['primary_hospital', 'Primary', counts.primary_hospital],
+            ['health_center', 'Health Center', counts.health_center],
+          ] as Array<[FacilityType, string, number]>).map(([type, label, count]) => (
+            <button key={type} onClick={() => setActiveType(type)} className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border transition-all ${activeType === type ? 'bg-primary-900 text-white border-primary-900' : 'bg-surface-50 dark:bg-surface-950 border-primary-100 dark:border-primary-800 text-primary-700 dark:text-primary-300'}`}>
+              {label} <span className="ml-2 text-[10px] font-bold opacity-80">{count}</span>
+            </button>
+          ))}
+          <div className="ml-auto pr-1 text-primary-300 flex items-center gap-1">
+            <IconFilter size={14} />
+          </div>
+        </div>
       </div>
 
-      {/* Facility List */}
-      <div className="bg-white dark:bg-surface-900 border border-primary-200 dark:border-primary-800 rounded overflow-hidden">
-        <DataTable 
-          columns={columns} 
-          data={filteredFacilities || []} 
-          isLoading={isLoading} 
-          emptyMessage="No facilities found in the regional health network."
-        />
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-52 rounded-3xl bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 animate-pulse" />)}
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="rounded-3xl bg-white dark:bg-surface-900 border border-dashed border-primary-300 dark:border-primary-700 p-10 text-center">
+          <p className="text-sm font-semibold text-primary-700 dark:text-primary-200">No facilities match your current filters.</p>
+          <p className="mt-2 text-xs text-primary-500">Try a different search or switch facility type.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {sorted.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => navigate(`/admin/facilities/${f.id}`)}
+              className="text-left rounded-3xl bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 hover:border-primary-300 dark:hover:border-primary-600 transition-all shadow-sm hover:shadow-xl hover:-translate-y-0.5 overflow-hidden group"
+            >
+              <div className="p-5 flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-50 dark:bg-surface-950 border border-primary-100 dark:border-primary-800 overflow-hidden flex items-center justify-center shrink-0">
+                    {f.profileImageUrl ? (
+                      <img src={getBackendUrl(f.profileImageUrl)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    ) : (
+                      <IconBuildingHospital size={26} className="text-primary-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black uppercase tracking-tight text-primary-900 dark:text-white truncate">
+                      {f.name || 'Unnamed Facility'}
+                    </p>
+                    <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold text-primary-500 uppercase tracking-widest">
+                      <IconMapPin size={12} />
+                      <span className="truncate">{f.location || 'Unknown location'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <Badge
+                    label={String(f.type || 'facility').split('_').join(' ')}
+                    variant={(String(f.type || '').includes('hospital') ? 'info' : 'warning') as any}
+                  />
+                  <span className="text-[9px] font-black text-primary-300 uppercase tracking-widest">
+                    ID {f.id.slice(0, 8)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="px-5 pb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-primary-400 uppercase tracking-wider">
+                    Open profile
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteConfirmId(f.id);
+                    }}
+                    className="p-2 rounded-xl border border-red-100 text-red-600 hover:bg-red-50 transition-colors"
+                    title="Delete"
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                  <div className="p-2 rounded-xl bg-primary-900 text-white border border-primary-900">
+                    <IconChevronRight size={16} />
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Register/Edit Modal */}
       {isModalOpen && (

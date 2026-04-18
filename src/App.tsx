@@ -69,10 +69,7 @@ export default function App() {
   }
 
   if (user?.role === 'system_admin') {
-     navItems.push({ path: "/", icon: IconLayoutDashboard, label: "Command Center" });
      navItems.push({ path: "/admin/facilities", icon: IconUser, label: "Manage System" });
-     navItems.push({ path: "/directory", icon: IconBuilding, label: "Facility Network" });
-     navItems.push({ path: "/analytics", icon: IconChartBar, label: "Analytics" });
   }
 
   if (user?.role === 'liaison_officer') {
@@ -268,6 +265,8 @@ export default function App() {
                   ? <Navigate to="/admin/departments" replace /> 
                   : user?.role === 'department_head'
                     ? <Navigate to="/department/staff" replace />
+                  : user?.role === 'system_admin'
+                    ? <Navigate to="/admin/facilities" replace />
                   : <Dashboard />
                 }
               </ProtectedRoute>
