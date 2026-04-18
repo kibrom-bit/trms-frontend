@@ -4,6 +4,10 @@ import { useAuth } from "./context/AuthContext";
 import { useNotifications } from "./context/NotificationContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NotificationBanners } from "./components/ui/NotificationBanners";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "./services/api";
+import { Facility } from "./types/api";
+import { getBackendUrl } from "./utils/url-utils";
 import {
   IconLayoutDashboard,
   IconBuilding,
@@ -37,6 +41,15 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const { data: myFacility } = useQuery({
+    queryKey: ["my-facility", user?.facilityId],
+    queryFn: async () => {
+      const r = await apiClient.get<Facility>(`/facilities/${user?.facilityId}`);
+      return r.data;
+    },
+    enabled: !!user?.facilityId,
+  });
 
   if (!isAuthenticated) {
     return (
@@ -92,6 +105,30 @@ export default function App() {
             <div className="w-10 h-10 bg-primary-900 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary-900/20 group-hover:scale-105 transition-transform">T</div>
             <span className="text-xl font-black tracking-tighter uppercase dark:text-white group-hover:text-primary-900 transition-colors">TRMS</span>
           </NavLink>
+
+          {user?.facilityId ? (
+            <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800 border border-primary-100 dark:border-primary-800">
+              <div className="w-9 h-9 rounded-xl bg-white dark:bg-surface-900 border border-primary-100 dark:border-primary-800 overflow-hidden flex items-center justify-center">
+                {myFacility?.profileImageUrl ? (
+                  <img
+                    src={getBackendUrl(myFacility.profileImageUrl)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[10px] font-black text-primary-600">
+                    {(myFacility?.name || user?.facilityName || "F").charAt(0)}
+                  </span>
+                )}
+              </div>
+              <div className="leading-tight min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary-400">Facility</p>
+                <p className="text-[11px] font-black text-primary-900 dark:text-white truncate max-w-[220px]">
+                  {myFacility?.name || user?.facilityName}
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
